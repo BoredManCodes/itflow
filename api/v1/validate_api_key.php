@@ -52,17 +52,34 @@ if ($_SERVER['REQUEST_METHOD'] !== "GET" && $_SERVER['REQUEST_METHOD'] !== "POST
     exit();
 }
 
+// Accept the API key from (in order of preference):
+//   1. Authorization: Bearer <key>
+//   2. X-API-Key: <key>
+//   3. ?api_key=<key>            (legacy)
+//   4. POST body { "api_key": "<key>" }   (legacy)
+// Headers are preferred because query-string credentials land in web-server
+// access logs, Referer headers, browser history, and client-side error
+// trackers; header values do not.
+$api_key_from_header = null;
+$auth_header = $_SERVER['HTTP_AUTHORIZATION'] ?? ($_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '');
+if (stripos($auth_header, 'Bearer ') === 0) {
+    $api_key_from_header = trim(substr($auth_header, 7));
+} elseif (!empty($_SERVER['HTTP_X_API_KEY'])) {
+    $api_key_from_header = trim($_SERVER['HTTP_X_API_KEY']);
+}
+
 // Check API key is provided
-if (!isset($_GET['api_key']) && !isset($_POST['api_key'])) {
+if (!$api_key_from_header && !isset($_GET['api_key']) && !isset($_POST['api_key'])) {
     header(WORDING_UNAUTHORIZED);
     exit();
 }
 
-// Set API key variable
-if (isset($_GET['api_key'])) {
+// Set API key variable (header wins over query-string/body for forward compat)
+if ($api_key_from_header) {
+    $api_key = sanitizeInput($api_key_from_header);
+} elseif (isset($_GET['api_key'])) {
     $api_key = sanitizeInput($_GET['api_key']);
-}
-if (isset($_POST['api_key'])) {
+} else {
     $api_key = sanitizeInput($_POST['api_key']);
 }
 

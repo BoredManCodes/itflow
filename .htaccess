@@ -1,2 +1,11 @@
 # Prevent access to .git, .github, and config.php
 RedirectMatch 404 ^/(\.git|\.github|config\.php)
+
+# Pass the Authorization header through to PHP. mod_php strips it by default,
+# so without this the API can't read `Authorization: Bearer <key>`. FPM/CGI
+# setups are unaffected.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{HTTP:Authorization} ^(.+)$
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+</IfModule>
