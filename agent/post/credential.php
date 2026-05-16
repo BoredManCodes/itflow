@@ -53,11 +53,16 @@ if (isset($_POST['edit_credential'])) {
     enforceClientAccess();
 
     // Determine if the password has actually changed (salt is rotated on all updates, so have to dencrypt both and compare)
-    $current_password = decryptCredentialEntry(mysqli_fetch_row(mysqli_query($mysqli, "SELECT credential_password FROM credentials WHERE credential_id = $credential_id"))[0]); // Get current credential password
+    $existing_credential_password_encrypted = mysqli_fetch_row(mysqli_query($mysqli, "SELECT credential_password FROM credentials WHERE credential_id = $credential_id"))[0];
+    $current_password = decryptCredentialEntry($existing_credential_password_encrypted); // Get current credential password
     $new_password = decryptCredentialEntry($password); // Get the new password being set (already encrypted by the credential model)
     if ($current_password !== $new_password) {
         // The password has been changed - update the DB to track
         mysqli_query($mysqli, "UPDATE credentials SET credential_password_changed_at = NOW() WHERE credential_id = $credential_id");
+
+        // Record the previous (now superseded) password in history so it can be reviewed later
+        $existing_credential_password_escaped = mysqli_real_escape_string($mysqli, $existing_credential_password_encrypted);
+        mysqli_query($mysqli, "INSERT INTO credential_history SET credential_history_credential_id = $credential_id, credential_history_password = '$existing_credential_password_escaped', credential_history_changed_by = $session_user_id, credential_history_changed_by_name = '$session_name'");
     }
 
     // Update the credential entry with the new details

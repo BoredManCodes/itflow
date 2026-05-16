@@ -872,6 +872,26 @@ CREATE TABLE `contracts` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `credential_history`
+--
+
+DROP TABLE IF EXISTS `credential_history`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `credential_history` (
+  `credential_history_id` int(11) NOT NULL AUTO_INCREMENT,
+  `credential_history_password` varbinary(200) DEFAULT NULL,
+  `credential_history_changed_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `credential_history_changed_by` int(11) NOT NULL DEFAULT 0,
+  `credential_history_changed_by_name` varchar(200) DEFAULT NULL,
+  `credential_history_credential_id` int(11) NOT NULL,
+  PRIMARY KEY (`credential_history_id`),
+  KEY `credential_history_credential_id` (`credential_history_credential_id`),
+  CONSTRAINT `credential_history_ibfk_1` FOREIGN KEY (`credential_history_credential_id`) REFERENCES `credentials` (`credential_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `credential_tags`
 --
 

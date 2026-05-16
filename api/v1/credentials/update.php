@@ -25,6 +25,13 @@ if (!empty($_POST['api_key_decrypt_password']) && !empty($credential_id)) {
 
         if ($password_changed) {
             mysqli_query($mysqli, "UPDATE credentials SET credential_password_changed_at = NOW() WHERE credential_id = $credential_id LIMIT 1");
+
+            // Record the previous password in history (the API key name is captured in lieu of a user)
+            if (!empty($credential_row['credential_password'])) {
+                $existing_credential_password_escaped = mysqli_real_escape_string($mysqli, $credential_row['credential_password']);
+                $api_key_name_escaped = mysqli_real_escape_string($mysqli, "API: $api_key_name");
+                mysqli_query($mysqli, "INSERT INTO credential_history SET credential_history_credential_id = $credential_id, credential_history_password = '$existing_credential_password_escaped', credential_history_changed_by = 0, credential_history_changed_by_name = '$api_key_name_escaped'");
+            }
         }
 
         // Logging

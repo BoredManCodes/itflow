@@ -34,6 +34,9 @@ while ($row = mysqli_fetch_assoc($sql_credential_tags)) {
     $credential_tag_id_array[] = $credential_tag_id;
 }
 
+// Password change history (most recent first)
+$sql_credential_history = mysqli_query($mysqli, "SELECT credential_history.*, users.user_name FROM credential_history LEFT JOIN users ON credential_history.credential_history_changed_by = users.user_id WHERE credential_history_credential_id = $credential_id ORDER BY credential_history_changed_at DESC");
+
 enforceClientAccess();
 
 // Generate the HTML form content using output buffering.
@@ -61,6 +64,9 @@ ob_start();
             </li>
             <li class="nav-item">
                 <a class="nav-link" data-toggle="pill" href="#pills-credential-notes<?php echo $credential_id; ?>">Notes</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="pill" href="#pills-credential-history<?php echo $credential_id; ?>">History</a>
             </li>
         </ul>
 
@@ -261,6 +267,54 @@ ob_start();
                         </div>
                     </div>
                 </div>
+
+            </div>
+
+            <div class="tab-pane fade" id="pills-credential-history<?php echo $credential_id; ?>">
+
+                <p class="text-secondary"><i class="fas fa-fw fa-info-circle mr-2"></i>Password changes are recorded automatically. Click an entry to reveal the previous password.</p>
+
+                <?php if (mysqli_num_rows($sql_credential_history) === 0) { ?>
+                    <div class="text-center text-muted py-3">
+                        <i class="fas fa-fw fa-history fa-2x mb-2"></i>
+                        <div>No password changes recorded yet.</div>
+                    </div>
+                <?php } else { ?>
+                    <div class="table-responsive">
+                        <table class="table table-striped table-borderless table-hover">
+                            <thead class="text-dark">
+                                <tr>
+                                    <th>Changed</th>
+                                    <th>By</th>
+                                    <th class="text-right">Previous Password</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php while ($row = mysqli_fetch_assoc($sql_credential_history)) {
+                                    $history_id = intval($row['credential_history_id']);
+                                    $history_changed_at = nullable_htmlentities($row['credential_history_changed_at']);
+                                    $history_changed_by_user = nullable_htmlentities($row['user_name']);
+                                    $history_changed_by_snapshot = nullable_htmlentities($row['credential_history_changed_by_name']);
+                                    $history_changed_by_display = !empty($history_changed_by_user) ? $history_changed_by_user : (!empty($history_changed_by_snapshot) ? "$history_changed_by_snapshot (deleted)" : "Unknown");
+                                    $history_previous_password = !empty($row['credential_history_password']) ? nullable_htmlentities(decryptCredentialEntry($row['credential_history_password'])) : '';
+                                ?>
+                                <tr>
+                                    <td title="<?php echo $history_changed_at; ?>"><?php echo timeAgo($row['credential_history_changed_at']); ?><br><small class="text-secondary"><?php echo $history_changed_at; ?></small></td>
+                                    <td><i class="fas fa-fw fa-user mr-1 text-secondary"></i><?php echo $history_changed_by_display; ?></td>
+                                    <td class="text-nowrap text-right">
+                                        <?php if ($history_previous_password !== '') { ?>
+                                            <button class="btn p-0" type="button" data-toggle="popover" data-trigger="focus" data-placement="top" data-content="<?php echo $history_previous_password; ?>"><i class="fas fa-2x fa-ellipsis-h text-secondary"></i><i class="fas fa-2x fa-ellipsis-h text-secondary"></i></button>
+                                            <button class="btn btn-sm clipboardjs" type="button" data-clipboard-text="<?php echo $history_previous_password; ?>"><i class="far fa-copy text-secondary"></i></button>
+                                        <?php } else { ?>
+                                            <span class="text-muted">-</span>
+                                        <?php } ?>
+                                    </td>
+                                </tr>
+                                <?php } ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php } ?>
 
             </div>
 

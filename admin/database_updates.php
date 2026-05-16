@@ -4394,10 +4394,28 @@ if (LATEST_DATABASE_VERSION > CURRENT_DATABASE_VERSION) {
 
     }
 
-    // if (CURRENT_DATABASE_VERSION == '2.4.4') {
-    //     // Insert queries here required to update to DB version 2.4.5
+    if (CURRENT_DATABASE_VERSION == '2.4.4') {
+
+        // Credential password change history
+        mysqli_query($mysqli, "CREATE TABLE IF NOT EXISTS `credential_history` (
+            `credential_history_id` int(11) NOT NULL AUTO_INCREMENT,
+            `credential_history_password` varbinary(200) DEFAULT NULL,
+            `credential_history_changed_at` datetime NOT NULL DEFAULT current_timestamp(),
+            `credential_history_changed_by` int(11) NOT NULL DEFAULT 0,
+            `credential_history_changed_by_name` varchar(200) DEFAULT NULL,
+            `credential_history_credential_id` int(11) NOT NULL,
+            PRIMARY KEY (`credential_history_id`),
+            KEY `credential_history_credential_id` (`credential_history_credential_id`),
+            CONSTRAINT `credential_history_ibfk_1` FOREIGN KEY (`credential_history_credential_id`) REFERENCES `credentials` (`credential_id`) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci");
+
+        mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '2.4.5'");
+    }
+
+    // if (CURRENT_DATABASE_VERSION == '2.4.5') {
+    //     // Insert queries here required to update to DB version 2.4.6
     //     // Then, update the database to the next sequential version
-    //     mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '2.4.5'");
+    //     mysqli_query($mysqli, "UPDATE `settings` SET `config_current_database_version` = '2.4.6'");
     // }
 
 } else {
