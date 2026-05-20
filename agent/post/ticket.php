@@ -196,6 +196,101 @@ if (isset($_POST['add_ticket'])) {
 
 }
 
+if (isset($_POST['apply_template_to_ticket'])) {
+
+    validateCSRFToken($_POST['csrf_token']);
+
+    enforceUserPermission('module_support', 2);
+
+    $ticket_id = intval($_POST['ticket_id']);
+    $ticket_template_id = intval($_POST['ticket_template_id']);
+    $merge_mode = (isset($_POST['merge_mode']) && $_POST['merge_mode'] === 'overwrite') ? 'overwrite' : 'append';
+
+    if (!$ticket_id || !$ticket_template_id) {
+        flash_alert("Invalid ticket or template", "danger");
+        redirect();
+    }
+
+    // Load ticket and verify it exists / isn't closed
+    $sql = mysqli_query($mysqli, "SELECT ticket_client_id, ticket_prefix, ticket_number, ticket_subject, ticket_details, ticket_closed_at FROM tickets WHERE ticket_id = $ticket_id LIMIT 1");
+    if (mysqli_num_rows($sql) === 0) {
+        flash_alert("Ticket not found", "danger");
+        redirect();
+    }
+    $ticket_row = mysqli_fetch_assoc($sql);
+    $client_id = intval($ticket_row['ticket_client_id']);
+    $ticket_prefix = sanitizeInput($ticket_row['ticket_prefix']);
+    $ticket_number = intval($ticket_row['ticket_number']);
+    $existing_subject = (string) $ticket_row['ticket_subject'];
+    $existing_details = (string) $ticket_row['ticket_details'];
+    $ticket_closed_at = $ticket_row['ticket_closed_at'];
+
+    enforceClientAccess($client_id);
+
+    if (!empty($ticket_closed_at)) {
+        flash_alert("Cannot apply a template to a closed ticket", "danger");
+        redirect("ticket.php?client_id=$client_id&ticket_id=$ticket_id");
+    }
+
+    // Load template (must not be archived)
+    $sql_template = mysqli_query($mysqli, "SELECT ticket_template_name, ticket_template_subject, ticket_template_details FROM ticket_templates WHERE ticket_template_id = $ticket_template_id AND ticket_template_archived_at IS NULL LIMIT 1");
+    if (mysqli_num_rows($sql_template) === 0) {
+        flash_alert("Template not found", "danger");
+        redirect("ticket.php?client_id=$client_id&ticket_id=$ticket_id");
+    }
+    $template_row = mysqli_fetch_assoc($sql_template);
+    $template_name = sanitizeInput($template_row['ticket_template_name']);
+    $template_subject = (string) $template_row['ticket_template_subject'];
+    $template_details = (string) $template_row['ticket_template_details'];
+
+    // Merge subject/details per chosen mode. Skip empty template fields in either mode.
+    $new_subject = $existing_subject;
+    $new_details = $existing_details;
+
+    if (trim($template_subject) !== '') {
+        if ($merge_mode === 'overwrite') {
+            $new_subject = $template_subject;
+        } else {
+            $new_subject = trim($existing_subject) === ''
+                ? $template_subject
+                : $existing_subject . ' ' . $template_subject;
+        }
+    }
+
+    if (trim($template_details) !== '') {
+        if ($merge_mode === 'overwrite') {
+            $new_details = $template_details;
+        } else {
+            $new_details = trim($existing_details) === ''
+                ? $template_details
+                : $existing_details . $template_details;
+        }
+    }
+
+    $new_subject_escaped = mysqli_real_escape_string($mysqli, $new_subject);
+    $new_details_escaped = mysqli_real_escape_string($mysqli, $new_details);
+
+    mysqli_query($mysqli, "UPDATE tickets SET ticket_subject = '$new_subject_escaped', ticket_details = '$new_details_escaped' WHERE ticket_id = $ticket_id");
+
+    // Add tasks from template
+    $task_added_count = 0;
+    $sql_task_templates = mysqli_query($mysqli, "SELECT * FROM task_templates WHERE task_template_ticket_template_id = $ticket_template_id");
+    while ($task_row = mysqli_fetch_assoc($sql_task_templates)) {
+        $task_order = intval($task_row['task_template_order']);
+        $task_name = sanitizeInput($task_row['task_template_name']);
+        $task_completion_estimate = intval($task_row['task_template_completion_estimate']);
+        mysqli_query($mysqli, "INSERT INTO tasks SET task_name = '$task_name', task_order = $task_order, task_completion_estimate = $task_completion_estimate, task_ticket_id = $ticket_id");
+        $task_added_count++;
+    }
+
+    logAction("Ticket", "Modify", "$session_name applied template $template_name to ticket $ticket_prefix$ticket_number - added $task_added_count tasks, merge mode: $merge_mode", $client_id, $ticket_id);
+
+    flash_alert("Template <strong>$template_name</strong> applied to <strong>$ticket_prefix$ticket_number</strong> — added $task_added_count task(s)");
+
+    redirect("ticket.php?client_id=$client_id&ticket_id=$ticket_id");
+
+}
+
 if (isset($_POST['edit_ticket'])) {
 
     validateCSRFToken($_POST['csrf_token']);

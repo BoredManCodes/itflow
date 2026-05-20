@@ -413,6 +413,10 @@ if (isset($_GET['ticket_id'])) {
                                         </a>
                                         <?php if (empty($ticket_closed_at) && $client_id) { ?>
                                             <div class="dropdown-divider"></div>
+                                            <a class="dropdown-item ajax-modal" href="#" data-modal-url="modals/ticket/ticket_apply_template.php?ticket_id=<?= $ticket_id ?>">
+                                                <i class="fas fa-fw fa-cube mr-2"></i>Apply Template
+                                            </a>
+                                            <div class="dropdown-divider"></div>
                                             <a class="dropdown-item ajax-modal" href="#"
                                                 data-modal-url="modals/ticket/ticket_contact.php?id=<?= $ticket_id ?>">
                                                 <i class="fa fa-fw fa-user mr-2"></i>Add Contact
