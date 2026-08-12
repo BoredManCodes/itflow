@@ -12,12 +12,16 @@ require_once 'contact_model.php';
 // Default
 $insert_id = false;
 
-if (!empty($name) && !empty($email) && !empty($client_id)) {
+if (!empty($name) && !empty($client_id)) {
 
-    // Check contact with $email doesn't already exist
-    $email_duplication_sql = mysqli_query($mysqli, "SELECT 1 FROM contacts WHERE contact_email = '$email' AND contact_client_id = '$client_id'");
+    // Check contact with $email doesn't already exist (skip when no email was given - nothing to dedupe on)
+    $email_is_duplicate = false;
+    if (!empty($email)) {
+        $email_duplication_sql = mysqli_query($mysqli, "SELECT 1 FROM contacts WHERE contact_email = '$email' AND contact_client_id = '$client_id'");
+        $email_is_duplicate = mysqli_num_rows($email_duplication_sql) > 0;
+    }
 
-    if (mysqli_num_rows($email_duplication_sql) == 0) {
+    if (!$email_is_duplicate) {
 
         // Remove other primary contact in clients if primary contact is selected
         if ($primary == 1) {
