@@ -83,6 +83,22 @@
                 <?php if (lookupUserPermission("module_support") >= 1) { ?>
                     <?php if ($config_module_enable_ticketing == 1) { ?>
                         <li class="nav-header mt-3">SUPPORT</li>
+                        <li class="nav-item" id="quickTimerNavItem">
+                            <div class="nav-link d-flex align-items-center justify-content-between">
+                                <button type="button" class="btn btn-link p-0 border-0 text-light d-flex align-items-center flex-grow-1 text-left" id="quickTimerToggle" title="Start timer">
+                                    <i class="nav-icon fas fa-play" id="quickTimerIcon"></i>
+                                    <span>
+                                        <span id="quickTimerLabel">Quick Timer</span>
+                                        <span class="text-monospace ml-1 d-none" id="quickTimerDisplay">00:00:00</span>
+                                    </span>
+                                </button>
+                                <button type="button" class="btn btn-xs btn-outline-light d-none" id="quickTimerStop" title="Stop &amp; save timer">
+                                    <i class="fas fa-stop"></i>
+                                </button>
+                            </div>
+                            <a href="#" class="ajax-modal d-none" id="quickTimerSaveModalTrigger" data-modal-url="" data-modal-size="lg"></a>
+                        </li>
+                        <script src="/agent/js/quick_timer.js"></script>
                         <li class="nav-item">
                             <a href="/agent/tickets.php" class="nav-link <?php if (basename($_SERVER["PHP_SELF"]) == "tickets.php" || basename($_SERVER["PHP_SELF"]) == "ticket.php") { echo "active"; } ?>">
                                 <i class="nav-icon fas fa-life-ring"></i>

@@ -73,3 +73,9 @@
     white-space: nowrap;
     transform-origin: left center;
 }
+
+/* Quick timer sidebar widget - tint the row red while it's actually running,
+   so it reads as "recording" at a glance rather than just sitting idle. */
+#quickTimerNavItem.quick-timer-running > .nav-link {
+    background-color: rgba(220, 53, 69, 0.35);
+}

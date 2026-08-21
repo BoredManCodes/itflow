@@ -204,6 +204,80 @@ if (isset($_POST['add_ticket'])) {
 
 }
 
+if (isset($_POST['save_quick_timer'])) {
+
+    validateCSRFToken();
+
+    enforceUserPermission('module_support', 2);
+
+    $entry_mode = ($_POST['entry_mode'] ?? '') === 'new' ? 'new' : 'existing';
+
+    $hours = intval($_POST['hours']);
+    $minutes = intval($_POST['minutes']);
+    $seconds = intval($_POST['seconds']);
+    $time_worked = escapeSql(sprintf("%02d:%02d:%02d", $hours, $minutes, $seconds));
+
+    $note_input = trim($_POST['note'] ?? '');
+    if ($note_input === '') {
+        $note_input = 'Time logged via quick timer';
+    }
+    $note = mysqli_real_escape_string($mysqli, $note_input);
+
+    if ($entry_mode === 'new') {
+
+        $client_id = intval($_POST['client_id']);
+        $subject = escapeSql($_POST['subject']);
+        $details = mysqli_real_escape_string($mysqli, $_POST['details'] ?? '');
+
+        enforceClientAccess($client_id);
+
+        // Atomically increment and get the new ticket number
+        mysqli_query($mysqli, "
+            UPDATE settings
+            SET
+                config_ticket_next_number = LAST_INSERT_ID(config_ticket_next_number),
+                config_ticket_next_number = config_ticket_next_number + 1
+            WHERE company_id = 1
+        ");
+        $ticket_number = mysqli_insert_id($mysqli);
+
+        $config_ticket_prefix_sql = escapeSql($config_ticket_prefix);
+        $url_key = randomString(32);
+
+        // Assigned straight to whoever ran the timer, so it lands as an open/assigned ticket
+        mysqli_query($mysqli, "INSERT INTO tickets SET ticket_prefix = '$config_ticket_prefix_sql', ticket_number = $ticket_number, ticket_source = 'Agent', ticket_subject = '$subject', ticket_details = '$details', ticket_priority = 'Medium', ticket_status = 2, ticket_created_by = $session_user_id, ticket_assigned_to = $session_user_id, ticket_url_key = '$url_key', ticket_client_id = $client_id");
+
+        $ticket_id = mysqli_insert_id($mysqli);
+        applyTicketSla($ticket_id);
+
+        logAudit("Ticket", "Create", "$session_name created ticket $config_ticket_prefix$ticket_number - $subject", $client_id, $ticket_id);
+
+    } else {
+
+        $ticket_id = intval($_POST['ticket_id']);
+
+        $ticket_row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT ticket_client_id FROM tickets WHERE ticket_id = $ticket_id"));
+        if (!$ticket_row) {
+            flashAlert("Ticket not found", "error");
+            redirect("tickets.php");
+        }
+
+        $client_id = intval($ticket_row['ticket_client_id']);
+        if ($client_id) {
+            enforceClientAccess($client_id);
+        }
+    }
+
+    mysqli_query($mysqli, "INSERT INTO ticket_replies SET ticket_reply = '$note', ticket_reply_time_worked = '$time_worked', ticket_reply_type = 'Internal', ticket_reply_by = $session_user_id, ticket_reply_ticket_id = $ticket_id");
+
+    mysqli_query($mysqli, "UPDATE tickets SET ticket_updated_at = NOW() WHERE ticket_id = $ticket_id");
+
+    flashAlert("Time logged against ticket");
+
+    redirect("ticket.php?client_id=$client_id&ticket_id=$ticket_id");
+
+}
+
 if (isset($_POST['edit_ticket'])) {
 
     validateCSRFToken();
