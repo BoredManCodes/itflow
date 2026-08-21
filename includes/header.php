@@ -37,6 +37,8 @@ header("X-Frame-Options: DENY");
     <link rel="stylesheet" href="/css/itflow_custom.css">
     <link rel="stylesheet" href="/libs/adminlte/css/adminlte.min.css">
 
+    <?php if ($config_theme === 'custom') echo themeCustomColorCss($config_theme_custom_color); ?>
+
     <!-- Scripts -->
     <script src="/libs/jquery/jquery.min.js"></script>
     <script src="/libs/toastr/toastr.min.js"></script>

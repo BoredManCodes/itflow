@@ -59,6 +59,35 @@ $theme_colors_array = array (
             </div>
 
         </form>
+
+        <hr>
+
+        <label>Or pick a custom colour <?php if ($config_theme === 'custom') { ?><span class="badge badge-success ml-1">Active</span><?php } ?></label>
+        <form action="post.php" method="post" autocomplete="off" class="form-row align-items-center">
+            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+
+            <div class="col-auto">
+                <input type="color" class="form-control p-1" id="customThemeColorPicker" style="width: 3.5rem; height: calc(1.5em + .75rem + 2px);" value="<?= escapeHtml($config_theme_custom_color ?: '#1976d2') ?>">
+            </div>
+            <div class="col-auto">
+                <input type="text" class="form-control" id="customThemeColorHex" name="custom_color" maxlength="7" pattern="^#[0-9a-fA-F]{6}$" style="width: 8rem;" value="<?= escapeHtml($config_theme_custom_color ?: '#1976d2') ?>">
+            </div>
+            <div class="col-auto">
+                <button type="submit" name="edit_theme_settings" value="custom" class="btn btn-primary text-bold"><i class="fa fa-check mr-2"></i>Apply custom colour</button>
+            </div>
+        </form>
+
+        <script>
+            document.getElementById('customThemeColorPicker').addEventListener('input', function () {
+                document.getElementById('customThemeColorHex').value = this.value;
+            });
+            document.getElementById('customThemeColorHex').addEventListener('input', function () {
+                if (/^#[0-9a-fA-F]{6}$/.test(this.value)) {
+                    document.getElementById('customThemeColorPicker').value = this.value;
+                }
+            });
+        </script>
+
     </div>
 </div>
 

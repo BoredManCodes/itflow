@@ -8,6 +8,22 @@ if (isset($_POST['edit_theme_settings'])) {
 
     $theme = preg_replace("/[^0-9a-zA-Z-]/", "", escapeSql($_POST['edit_theme_settings']));
 
+    if ($theme === 'custom') {
+        $custom_color = strval($_POST['custom_color'] ?? '');
+        if (!preg_match('/^#[0-9a-fA-F]{6}$/', $custom_color)) {
+            flashAlert("Enter a valid hex colour (e.g. #1976d2)", 'error');
+            redirect();
+        }
+
+        mysqli_query($mysqli, "UPDATE settings SET config_theme = 'custom', config_theme_custom_color = '" . escapeSql($custom_color) . "' WHERE company_id = 1");
+
+        logAudit("Settings", "Edit", "$session_name edited theme settings to custom ($custom_color)");
+
+        flashAlert("Changed theme to <strong>custom ($custom_color)</strong>");
+
+        redirect();
+    }
+
     mysqli_query($mysqli,"UPDATE settings SET config_theme = '$theme' WHERE company_id = 1");
 
     logAudit("Settings", "Edit", "$session_name edited theme settings to $theme");

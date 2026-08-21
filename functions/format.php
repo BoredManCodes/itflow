@@ -4,6 +4,45 @@
 // Split from the former monolithic functions.php
 
 
+// AdminLTE only ships fixed skin classes (accent-blue, navbar-blue, ...), so a
+// user-picked hex has nothing to attach to. This renders a small override
+// stylesheet for the "custom" skin, targeting the same selectors AdminLTE
+// defines for its named skins (navbar background, active sidebar link, accent
+// links) plus a darkened shade for hover/active states.
+function themeCustomColorCss($hex) {
+    $hex = ltrim(strval($hex), '#');
+    if (!preg_match('/^[0-9a-fA-F]{6}$/', $hex)) {
+        return '';
+    }
+
+    $r = hexdec(substr($hex, 0, 2));
+    $g = hexdec(substr($hex, 2, 2));
+    $b = hexdec(substr($hex, 4, 2));
+
+    $darken = function ($amount) use ($r, $g, $b) {
+        return sprintf('#%02x%02x%02x', max(0, $r - $amount), max(0, $g - $amount), max(0, $b - $amount));
+    };
+
+    $base = "#$hex";
+    $shade = $darken(35);
+
+    return <<<CSS
+<style>
+.navbar-custom { background-color: $base; color: #fff; }
+.sidebar-dark-custom .nav-sidebar > .nav-item > .nav-link.active { background-color: $base; color: #fff; }
+.sidebar-dark-custom .nav-sidebar.nav-legacy > .nav-item > .nav-link.active { border-color: $base; }
+.accent-custom .nav-tabs .nav-link.active { border-top-color: $base; }
+.accent-custom .btn-link,
+.accent-custom a:not(.dropdown-item):not(.btn-app):not(.nav-link):not(.brand-link):not(.page-link):not(.badge):not(.btn) { color: $base; }
+.accent-custom .btn-link:hover,
+.accent-custom a:not(.dropdown-item):not(.btn-app):not(.nav-link):not(.brand-link):not(.page-link):not(.badge):not(.btn):hover { color: $shade; }
+.accent-custom .dropdown-item.active, .accent-custom .dropdown-item:active { background-color: $base; color: #fff; }
+.accent-custom .custom-control-input:checked ~ .custom-control-label::before { background-color: $base; border-color: $shade; }
+</style>
+CSS;
+}
+
+
 function initials($string) {
     if (!empty($string)) {
         $return = '';
