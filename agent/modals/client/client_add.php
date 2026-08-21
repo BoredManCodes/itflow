@@ -84,7 +84,7 @@ ob_start();
                         <div class="input-group-prepend">
                             <span class="input-group-text"><i class="fa fa-fw fa-id-badge"></i></span>
                         </div>
-                        <input type="text" class="form-control" name="abbreviation" placeholder="Shortned name for client - Max chars 6" maxlength="6" oninput="this.value = this.value.toUpperCase()">
+                        <input type="text" class="form-control" name="abbreviation" placeholder="Shortened name for client - Max chars 6" maxlength="6" oninput="this.value = this.value.toUpperCase()">
                     </div>
                 </div>
 
