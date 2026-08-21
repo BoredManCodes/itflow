@@ -74,6 +74,9 @@ if (isset($_POST['add_ticket'])) {
         addToMailQueue($data);
         }
 
+    // Notify techs of the new (unassigned) ticket
+    appNotify("Ticket", "New ticket from " . escapeSql($session_client_name) . ": $subject", "/agent/ticket.php?ticket_id=$ticket_id&client_id=$session_client_id", $session_client_id, $ticket_id);
+
     // Custom action/notif handler
     triggerCustomAction('ticket_create', $ticket_id);
 
@@ -147,6 +150,8 @@ if (isset($_POST['add_ticket_comment'])) {
             ];
 
             addToMailQueue($data);
+
+            mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Ticket', notification = '$session_contact_name replied to Ticket " . escapeSql($config_ticket_prefix) . "$ticket_number - Subject: $ticket_subject that is assigned to you', notification_action = '/agent/ticket.php?ticket_id=$ticket_id&client_id=$session_client_id', notification_client_id = $session_client_id, notification_user_id = $ticket_assigned_to");
 
         }
 
