@@ -1552,3 +1552,17 @@ html {
 .client-header-toggle:hover .client-header-chevron {
     color: var(--bs-body-color);
 }
+
+/*
+   The sidebar company name (.brand-text) is scaled down via a CSS
+   transform (applied by the script in agent/includes/side_nav.php,
+   which measures the actual rendered width) so the full name always
+   fits without being cut off, however long it is. transform-origin
+   keeps the scaled text anchored to the left.
+*/
+.app-sidebar .sidebar-brand .brand-text {
+    display: inline-block;
+    vertical-align: middle;
+    white-space: nowrap;
+    transform-origin: left center;
+}
