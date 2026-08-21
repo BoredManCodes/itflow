@@ -3,15 +3,13 @@
 // table for the logged in user since the last check, and surfaces it via the
 // Notification API. Falls back to doing nothing if the browser can't/won't allow it.
 
-(function () {
+window.ItflowNotify = (function () {
 
-    if (typeof Notification === "undefined" || !window.itflowNotifyUserId) {
-        return;
-    }
-
+    var supported = typeof Notification !== "undefined" && window.itflowNotifyUserId;
     var userId = window.itflowNotifyUserId;
     var lastIdKey = "itflow_notif_last_id_" + userId;
     var pollMs = 30000;
+    var started = false;
 
     function getLastId() {
         return parseInt(localStorage.getItem(lastIdKey), 10) || 0;
@@ -91,25 +89,71 @@
     }
 
     function start() {
+        if (started) {
+            return;
+        }
+        started = true;
+
         if (localStorage.getItem(lastIdKey) === null) {
             baseline();
         }
         setInterval(poll, pollMs);
     }
 
-    if (Notification.permission === "granted") {
-        start();
-    } else if (Notification.permission !== "denied") {
-        // Ask on the first click, rather than immediately on page load
-        var askOnce = function () {
-            document.removeEventListener("click", askOnce);
+    if (supported) {
+        if (Notification.permission === "granted") {
+            start();
+        } else if (Notification.permission !== "denied") {
+            // Ask on the first click anywhere, rather than immediately on page load
+            var askOnce = function () {
+                document.removeEventListener("click", askOnce);
+                Notification.requestPermission().then(function (permission) {
+                    if (permission === "granted") {
+                        start();
+                    }
+                });
+            };
+            document.addEventListener("click", askOnce);
+        }
+    }
+
+    // Called from a button click (e.g. agent/user/user_details.php) to prove the
+    // whole pipeline - permission, AJAX poll, Notification API - actually works.
+    // Returns a status string via the callback: "granted", "denied", or "unsupported".
+    function test(callback) {
+        callback = callback || function () {};
+
+        if (!supported) {
+            callback("unsupported");
+            return;
+        }
+
+        function fireTest() {
+            jQuery.post("/agent/ajax.php", {
+                send_test_browser_notification: true,
+                csrf_token: jQuery('input[name="csrf_token"]').val()
+            }, function () {
+                start(); // no-op if already running
+                poll();  // don't wait for the interval
+                callback("granted");
+            }, "json");
+        }
+
+        if (Notification.permission === "granted") {
+            fireTest();
+        } else if (Notification.permission === "denied") {
+            callback("denied");
+        } else {
             Notification.requestPermission().then(function (permission) {
                 if (permission === "granted") {
-                    start();
+                    fireTest();
+                } else {
+                    callback(permission);
                 }
             });
-        };
-        document.addEventListener("click", askOnce);
+        }
     }
+
+    return { test: test };
 
 })();

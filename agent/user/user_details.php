@@ -73,5 +73,34 @@ require_once "includes/inc_all_user.php";
 
 </div>
 
+<div class="card card-dark">
+    <div class="card-header">
+        <h3 class="card-title"><i class="fas fa-bell mr-2"></i>Browser Notifications</h3>
+    </div>
+    <div class="card-body">
+        <p class="text-secondary">Send yourself a test notification to confirm your browser is set up to show ITFlow alerts for things like new ticket assignments and replies.</p>
+        <button type="button" id="testBrowserNotificationBtn" class="btn btn-secondary"><i class="fas fa-paper-plane mr-2"></i>Send test notification</button>
+    </div>
+</div>
+
+<script>
+    document.getElementById('testBrowserNotificationBtn').addEventListener('click', function () {
+        if (!window.ItflowNotify) {
+            toastr.error('Browser notifications are not available on this page.');
+            return;
+        }
+
+        window.ItflowNotify.test(function (status) {
+            if (status === 'granted') {
+                toastr.success('Test notification sent - it should pop up shortly.');
+            } else if (status === 'denied') {
+                toastr.error('Notifications are blocked for this site. Enable them in your browser\'s site settings and try again.');
+            } else {
+                toastr.error('This browser does not support notifications.');
+            }
+        });
+    });
+</script>
+
 <?php
 require_once "../../includes/footer.php";

@@ -1101,6 +1101,23 @@ if (isset($_GET['get_new_notifications'])) {
     exit;
 }
 
+/*
+ * Fired by the "Send test notification" button on the user's account page
+ * (agent/user/user_details.php) - drops a row into the notifications table
+ * for the current user so js/browser_notifications.js has something to pick up
+ */
+if (isset($_POST['send_test_browser_notification'])) {
+
+    validateCSRFToken();
+
+    header('Content-Type: application/json');
+
+    mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Test', notification = 'This is a test notification - browser notifications are working.', notification_action = '/agent/user/user_details.php', notification_user_id = $session_user_id");
+
+    echo json_encode(['status' => 'success']);
+    exit;
+}
+
 if (isset($_GET['get_credential_via_id'])) {
     enforceUserPermission('module_credential');
 
