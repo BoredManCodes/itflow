@@ -26,7 +26,7 @@ $sql_settings = mysqli_query($mysqli, "SELECT config_azure_client_id, config_azu
     config_recurring_invoice_prefix, config_send_invoice_reminders, config_smtp_encryption,
     config_smtp_host, config_smtp_password, config_smtp_port, config_smtp_provider,
     config_smtp_username, config_start_page, config_telemetry, config_theme,
-    config_ticket_autoclose_hours, config_ticket_client_general_notifications,
+    config_theme_custom_color, config_ticket_autoclose_hours, config_ticket_client_general_notifications,
     config_ticket_default_billable, config_ticket_default_view, config_ticket_email_parse,
     config_ticket_email_parse_unknown_senders, config_ticket_from_email,
     config_ticket_from_name, config_ticket_moving_columns,
@@ -156,6 +156,7 @@ $config_time_format = "g:i A";
 
 // Theme
 $config_theme = $row['config_theme'];
+$config_theme_custom_color = $row['config_theme_custom_color'];
 
 // Telemetry
 $config_telemetry = intval($row['config_telemetry']);

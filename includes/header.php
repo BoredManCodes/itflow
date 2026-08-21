@@ -67,6 +67,8 @@ header("X-Frame-Options: DENY");
     <link rel="stylesheet" href="/libs/adminlte/css/adminlte-colors-v3.min.css">
     <link rel="stylesheet" href="/css/itflow_custom.css">
 
+    <?php if ($config_theme === 'custom') echo themeCustomColorCss($config_theme_custom_color); ?>
+
     <!-- Scripts -->
 </head>
 <?php /* intl-tel-input needs an ISO2 country, the companies table stores a
