@@ -67,6 +67,11 @@ if (basename(dirname($_SERVER['REQUEST_URI'])) === 'guest') { ?>
 <script src="/js/confirm_modal.js"></script>
 <script src="/js/date_filter.js"></script>
 
+<?php if (!empty($session_user_id)) { ?>
+<script>window.itflowNotifyUserId = <?= intval($session_user_id) ?>;</script>
+<script src="/js/browser_notifications.js"></script>
+<?php } ?>
+
 </body>
 </html>
 

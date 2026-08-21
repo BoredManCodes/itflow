@@ -113,6 +113,10 @@ function addTicket($contact_id, $contact_name, $contact_email, $client_id, $date
     // Logging
     logAudit("Ticket", "Create", "Email parser: Client contact $contact_email_esc created ticket $ticket_prefix_esc$ticket_number ($subject) ($id)", $client_id, $id);
 
+    // Notify techs of the new (unassigned) ticket
+    $client_uri = $client_id ? "&client_id=$client_id" : '';
+    appNotify("Ticket", "New ticket via email from " . escapeSql($contact_name) . ": " . escapeSql($subject), "/agent/ticket.php?ticket_id=$id$client_uri", $client_id, $id);
+
     mkdirMissing('../uploads/tickets/');
     $att_dir = "../uploads/tickets/" . $id . "/";
     mkdirMissing($att_dir);
@@ -352,6 +356,9 @@ function addReply($from_email, $date, $subject, $ticket_number, $message, $attac
                     ]
                 ];
                 addToMailQueue($data);
+
+                $config_ticket_prefix_esc = mysqli_real_escape_string($mysqli, $config_ticket_prefix);
+                mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Ticket', notification = '$from_email_esc replied to Ticket $config_ticket_prefix_esc$ticket_number - Subject: $ticket_subject that is assigned to you', notification_action = '/agent/ticket.php?ticket_id=$ticket_id$client_uri', notification_client_id = $client_id, notification_user_id = $ticket_assigned_to");
             }
         }
 

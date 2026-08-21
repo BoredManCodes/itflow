@@ -1260,6 +1260,44 @@ if (isset($_GET['get_internal_users'])) {
     exit;
 }
 
+/*
+ * Polled by js/browser_notifications.js to surface native browser notifications
+ * for events that have landed in the notifications table since the last check
+ */
+if (isset($_GET['get_new_notifications'])) {
+    header('Content-Type: application/json');
+
+    $since_id = intval($_GET['since_id'] ?? 0);
+
+    $response = [];
+
+    $sql = mysqli_query($mysqli, "SELECT notification_id, notification_type, notification, notification_action
+        FROM notifications
+        WHERE notification_user_id = $session_user_id
+        AND notification_dismissed_at IS NULL
+        AND notification_id > $since_id
+        ORDER BY notification_id ASC
+        LIMIT 20
+    ");
+
+    while ($row = mysqli_fetch_assoc($sql)) {
+        $action = trim((string) $row['notification_action']);
+        if ($action !== '' && $action[0] !== '/') {
+            $action = '/agent/' . $action;
+        }
+
+        $response[] = [
+            'id' => intval($row['notification_id']),
+            'type' => html_entity_decode(strip_tags($row['notification_type']), ENT_QUOTES),
+            'text' => html_entity_decode(strip_tags($row['notification']), ENT_QUOTES),
+            'action' => $action,
+        ];
+    }
+
+    echo json_encode($response);
+    exit;
+}
+
 if (isset($_GET['get_credential_via_id'])) {
     enforceUserPermission('module_credential');
 
