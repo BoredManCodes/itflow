@@ -2396,6 +2396,8 @@ CREATE TABLE `settings` (
   `config_update_latest_commit` varchar(40) DEFAULT NULL,
   `config_update_pending_commits` text DEFAULT NULL,
   `config_update_checked_at` datetime DEFAULT NULL,
+  `config_update_notification_email` varchar(200) DEFAULT NULL,
+  `config_update_last_notified_version` varchar(40) DEFAULT NULL,
   PRIMARY KEY (`company_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

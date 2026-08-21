@@ -14,7 +14,12 @@ if (isset($_POST['edit_notification_settings'])) {
     $config_recurring_auto_send_invoice = intval($_POST['config_recurring_auto_send_invoice'] ?? 0);
     $config_ticket_client_general_notifications = intval($_POST['config_ticket_client_general_notifications'] ?? 0);
 
-    mysqli_query($mysqli,"UPDATE settings SET config_send_invoice_reminders = $config_send_invoice_reminders, config_recurring_auto_send_invoice = $config_recurring_auto_send_invoice, config_enable_alert_domain_expire = $config_enable_alert_domain_expire, config_ticket_client_general_notifications = $config_ticket_client_general_notifications WHERE company_id = 1");
+    $config_update_notification_email = '';
+    if (filter_var($_POST['config_update_notification_email'], FILTER_VALIDATE_EMAIL)) {
+        $config_update_notification_email = escapeSql($_POST['config_update_notification_email']);
+    }
+
+    mysqli_query($mysqli,"UPDATE settings SET config_send_invoice_reminders = $config_send_invoice_reminders, config_recurring_auto_send_invoice = $config_recurring_auto_send_invoice, config_enable_alert_domain_expire = $config_enable_alert_domain_expire, config_ticket_client_general_notifications = $config_ticket_client_general_notifications, config_update_notification_email = '$config_update_notification_email' WHERE company_id = 1");
 
     logAudit("Settings", "Edit", "$session_name edited notification settings");
 

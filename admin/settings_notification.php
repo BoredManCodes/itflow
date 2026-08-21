@@ -109,6 +109,17 @@ require_once "includes/inc_all_admin.php";
 
                 <hr>
 
+                <h5 class="text-uppercase text-secondary">System</h5>
+                <div class="mb-3">
+                    <label>Email address to notify when an ITFlow update is available <small class="text-secondary">(Checked nightly by cron; sends once per new version)</small></label>
+                    <div class="input-group">
+                            <span class="input-group-text"><i class="fa fa-fw fa-download"></i></span>
+                        <input type="email" class="form-control" name="config_update_notification_email" placeholder="Address to notify when updates are available, leave blank for none" maxlength="200" value="<?= escapeHtml($config_update_notification_email) ?>">
+                    </div>
+                </div>
+
+                <hr>
+
                 <button type="submit" name="edit_notification_settings" class="btn btn-primary text-bold"><i class="fa fa-check me-2"></i>Save</button>
 
             </form>
