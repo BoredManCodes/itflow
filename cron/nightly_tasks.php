@@ -39,6 +39,7 @@ $sql_companies = mysqli_query($mysqli, "SELECT company_city, company_country, co
     config_ticket_client_general_notifications, config_ticket_email_parse,
     config_ticket_from_email, config_ticket_from_name,
     config_ticket_new_ticket_notification_email, config_ticket_prefix,
+    config_update_last_notified_version, config_update_notification_email,
     config_whitelabel_enabled, config_whitelabel_key FROM companies, settings WHERE companies.company_id = settings.company_id AND companies.company_id = 1");
 
 $row = mysqli_fetch_assoc($sql_companies);
@@ -80,6 +81,10 @@ $config_ticket_from_email = escapeSql($row['config_ticket_from_email']);
 $config_ticket_client_general_notifications = intval($row['config_ticket_client_general_notifications']);
 $config_ticket_autoclose_hours = intval($row['config_ticket_autoclose_hours']);
 $config_ticket_new_ticket_notification_email = escapeSql($row['config_ticket_new_ticket_notification_email']);
+
+// Update notifications
+$config_update_notification_email = escapeSql($row['config_update_notification_email']);
+$config_update_last_notified_version = escapeSql($row['config_update_last_notified_version']);
 
 // Get Config for Telemetry
 $config_theme = $row['config_theme'];
@@ -1410,6 +1415,29 @@ $update_message = $updates->update_message;
 if ($updates->current_version !== $updates->latest_version) {
     // Send Alert to inform Updates Available
     appNotify("Update", "$update_message", "/admin/update.php");
+
+    // Email once per version - config_update_last_notified_version tracks the version we
+    // last emailed about, so this only fires again once $updates->latest_version changes.
+    if (!empty($config_update_notification_email) && $updates->latest_version !== $config_update_last_notified_version) {
+
+        $data = [
+            [
+                'from' => $config_mail_from_email,
+                'from_name' => $config_mail_from_name,
+                'recipient' => $config_update_notification_email,
+                'recipient_name' => $config_update_notification_email,
+                'subject' => "ITFlow update available",
+                'body' => "A new ITFlow update is available for the $company_name install.<br><br>"
+                    . "Currently running: <code>" . escapeHtml(substr((string) $updates->current_version, 0, 7)) . "</code><br>"
+                    . "Latest available: <code>" . escapeHtml(substr((string) $updates->latest_version, 0, 7)) . "</code><br><br>"
+                    . "Review the <a href=\"https://github.com/itflow-org/itflow/blob/master/CHANGELOG.md\">changelog</a> and back up before updating, then apply it from Admin &gt; Update.",
+            ]
+        ];
+        addToMailQueue($data);
+
+        mysqli_query($mysqli, "UPDATE settings SET config_update_last_notified_version = '" . escapeSql($updates->latest_version) . "' WHERE company_id = 1");
+
+    }
 }
 
 

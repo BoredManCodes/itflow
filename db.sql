@@ -2306,6 +2306,8 @@ CREATE TABLE `settings` (
   `config_backup_retention_days` int(11) NOT NULL DEFAULT 30,
   `config_backup_retention_count` int(11) NOT NULL DEFAULT 5,
   `config_backup_cron_type` varchar(20) NOT NULL DEFAULT 'full',
+  `config_update_notification_email` varchar(200) DEFAULT NULL,
+  `config_update_last_notified_version` varchar(40) DEFAULT NULL,
   PRIMARY KEY (`company_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
