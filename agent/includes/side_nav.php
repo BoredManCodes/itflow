@@ -3,8 +3,35 @@
 
     <a class="brand-link" href="/agent/dashboard.php">
         <div class="brand-image"></div>
-        <span class="brand-text h4"><?= escapeHtml($session_company_name) ?></span>
+        <span class="brand-text h4" id="sidebar-brand-text"><?= escapeHtml($session_company_name) ?></span>
     </a>
+    <script>
+        (function () {
+            var text = document.getElementById('sidebar-brand-text');
+            if (!text) return;
+            var link = text.closest('.brand-link');
+
+            function fitBrandText() {
+                text.style.transform = 'none';
+                // getBoundingClientRect gives real on-screen edges, unlike
+                // offsetLeft which is unreliable for inline text sitting
+                // next to a floated element (the brand image) like this.
+                var available = link.getBoundingClientRect().right - text.getBoundingClientRect().left - 8;
+                var natural = text.scrollWidth;
+                // Scale rather than step font-size down: a step-based
+                // approach needs a minimum size floor, and once the name
+                // is too long to fit even at the floor it silently gets
+                // clipped. Scaling has no floor, so the full name always
+                // fits, however long it is.
+                var scale = natural > available ? available / natural : 1;
+                text.style.transform = 'scale(' + scale.toFixed(4) + ')';
+            }
+
+            fitBrandText();
+            window.addEventListener('load', fitBrandText);
+            window.addEventListener('resize', fitBrandText);
+        })();
+    </script>
 
     <!-- Sidebar -->
     <div class="sidebar">
