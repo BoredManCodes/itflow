@@ -21,7 +21,8 @@ if (isset($_GET['recurring_invoice_id'])) {
             location_country, location_state, location_zip, recurring_invoice_amount,
             recurring_invoice_category_id, recurring_invoice_created_at,
             recurring_invoice_currency_code, recurring_invoice_discount_amount,
-            recurring_invoice_email_notify, recurring_invoice_frequency, recurring_invoice_last_sent,
+            recurring_invoice_discount_type, recurring_invoice_email_notify,
+            recurring_invoice_frequency, recurring_invoice_last_sent,
             recurring_invoice_next_date, recurring_invoice_note, recurring_invoice_number,
             recurring_invoice_prefix, recurring_invoice_scope, recurring_invoice_status,
             recurring_payment_id, recurring_payment_method, recurring_payment_recurring_invoice_id,
@@ -59,6 +60,7 @@ if (isset($_GET['recurring_invoice_id'])) {
     $recurring_invoice_next_date = escapeHtml($row['recurring_invoice_next_date']);
     $recurring_invoice_amount = floatval($row['recurring_invoice_amount']);
     $recurring_invoice_discount = floatval($row['recurring_invoice_discount_amount']);
+    $recurring_invoice_discount_type = $row['recurring_invoice_discount_type'] === 'percent' ? 'percent' : 'amount';
     $recurring_invoice_currency_code = escapeHtml($row['recurring_invoice_currency_code']);
     $recurring_invoice_note = escapeHtml($row['recurring_invoice_note']);
     $recurring_invoice_email_notify = intval($row['recurring_invoice_email_notify']);
@@ -417,10 +419,14 @@ if (isset($_GET['recurring_invoice_id'])) {
                                 <td>Subtotal</td>
                                 <td class="text-right"><?= numfmt_format_currency($currency_format, $sub_total, $recurring_invoice_currency_code) ?></td>
                             </tr>
-                            <?php if ($recurring_invoice_discount > 0) { ?>
+                            <?php if ($recurring_invoice_discount > 0) {
+                                $discount_display_amount = calculateDiscountAmount($sub_total + $total_tax, $recurring_invoice_discount, $recurring_invoice_discount_type);
+                            ?>
                                 <tr>
-                                    <td>Discount</td>
-                                    <td class="text-right">-<?= numfmt_format_currency($currency_format, $recurring_invoice_discount, $recurring_invoice_currency_code) ?></td>
+                                    <td>Discount<?php if ($recurring_invoice_discount_type === 'percent') {
+                                                    echo ' (' . rtrim(rtrim(number_format($recurring_invoice_discount, 2), '0'), '.') . '%)';
+                                                } ?></td>
+                                    <td class="text-right">-<?= numfmt_format_currency($currency_format, $discount_display_amount, $recurring_invoice_currency_code) ?></td>
                                 </tr>
                             <?php } ?>
                             <?php if ($total_tax > 0) { ?>

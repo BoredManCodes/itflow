@@ -79,12 +79,13 @@ if (isset($_POST['add_quote_copy'])) {
 
     $quote_number = mysqli_insert_id($mysqli);
 
-    $sql = mysqli_query($mysqli,"SELECT quote_amount, quote_category_id, quote_currency_code, quote_discount_amount, quote_note,
-        quote_number, quote_prefix, quote_scope FROM quotes WHERE quote_id = $quote_id");
+    $sql = mysqli_query($mysqli,"SELECT quote_amount, quote_category_id, quote_currency_code, quote_discount_amount, quote_discount_type,
+        quote_note, quote_number, quote_prefix, quote_scope FROM quotes WHERE quote_id = $quote_id");
     $row = mysqli_fetch_assoc($sql);
     $original_quote_prefix = escapeSql($row['quote_prefix']);
     $original_quote_number = escapeSql($row['quote_number']);
     $quote_discount_amount = floatval($row['quote_discount_amount']);
+    $quote_discount_type = $row['quote_discount_type'] === 'percent' ? 'percent' : 'amount';
     $quote_amount = floatval($row['quote_amount']);
     $quote_currency_code = escapeSql($row['quote_currency_code']);
     $quote_scope = escapeSql($row['quote_scope']);
@@ -94,7 +95,7 @@ if (isset($_POST['add_quote_copy'])) {
     //Generate a unique URL key for clients to access
     $quote_url_key = randomString(32);
 
-    mysqli_query($mysqli,"INSERT INTO quotes SET quote_prefix = '$config_quote_prefix', quote_number = $quote_number, quote_scope = '$quote_scope', quote_date = '$date', quote_expire = '$expire', quote_category_id = $category_id, quote_status = 'Draft', quote_discount_amount = $quote_discount_amount, quote_amount = $quote_amount, quote_currency_code = '$quote_currency_code', quote_note = '$quote_note', quote_url_key = '$quote_url_key', quote_client_id = $client_id");
+    mysqli_query($mysqli,"INSERT INTO quotes SET quote_prefix = '$config_quote_prefix', quote_number = $quote_number, quote_scope = '$quote_scope', quote_date = '$date', quote_expire = '$expire', quote_category_id = $category_id, quote_status = 'Draft', quote_discount_amount = $quote_discount_amount, quote_discount_type = '$quote_discount_type', quote_amount = $quote_amount, quote_currency_code = '$quote_currency_code', quote_note = '$quote_note', quote_url_key = '$quote_url_key', quote_client_id = $client_id");
 
     $new_quote_id = mysqli_insert_id($mysqli);
 
@@ -137,12 +138,13 @@ if (isset($_POST['add_quote_to_invoice'])) {
     $date = escapeSql($_POST['date']);
 
     $sql = mysqli_query($mysqli,"SELECT client_net_terms, quote_amount, quote_category_id, quote_client_id, quote_currency_code,
-        quote_discount_amount, quote_note, quote_number, quote_prefix, quote_scope FROM clients, quotes WHERE client_id = quote_client_id AND quote_id = $quote_id");
+        quote_discount_amount, quote_discount_type, quote_note, quote_number, quote_prefix, quote_scope FROM clients, quotes WHERE client_id = quote_client_id AND quote_id = $quote_id");
     $row = mysqli_fetch_assoc($sql);
     $client_net_terms = intval($row['client_net_terms']);
     $quote_prefix = escapeSql($row['quote_prefix']);
     $quote_number = escapeSql($row['quote_number']);
     $quote_discount_amount = floatval($row['quote_discount_amount']);
+    $quote_discount_type = $row['quote_discount_type'] === 'percent' ? 'percent' : 'amount';
     $quote_amount = floatval($row['quote_amount']);
     $quote_currency_code = escapeSql($row['quote_currency_code']);
     $quote_scope = escapeSql($row['quote_scope']);
@@ -169,7 +171,7 @@ if (isset($_POST['add_quote_to_invoice'])) {
     //Generate a unique URL key for clients to access
     $url_key = randomString(32);
 
-    mysqli_query($mysqli,"INSERT INTO invoices SET invoice_prefix = '$config_invoice_prefix', invoice_number = $invoice_number, invoice_scope = '$quote_scope', invoice_date = '$date', invoice_due = DATE_ADD(CURDATE(), INTERVAL $client_net_terms day), invoice_category_id = $category_id, invoice_status = 'Draft', invoice_discount_amount = $quote_discount_amount, invoice_amount = $quote_amount, invoice_currency_code = '$quote_currency_code', invoice_note = '$quote_note', invoice_url_key = '$url_key', invoice_client_id = $client_id");
+    mysqli_query($mysqli,"INSERT INTO invoices SET invoice_prefix = '$config_invoice_prefix', invoice_number = $invoice_number, invoice_scope = '$quote_scope', invoice_date = '$date', invoice_due = DATE_ADD(CURDATE(), INTERVAL $client_net_terms day), invoice_category_id = $category_id, invoice_status = 'Draft', invoice_discount_amount = $quote_discount_amount, invoice_discount_type = '$quote_discount_type', invoice_amount = $quote_amount, invoice_currency_code = '$quote_currency_code', invoice_note = '$quote_note', invoice_url_key = '$url_key', invoice_client_id = $client_id");
 
     $new_invoice_id = mysqli_insert_id($mysqli);
 
@@ -256,21 +258,22 @@ if (isset($_POST['add_quote_item'])) {
     mysqli_query($mysqli,"INSERT INTO quote_items SET item_name = '$name', item_description = '$description', item_quantity = $qty, item_price = $price, item_subtotal = $subtotal, item_tax = $tax_amount, item_total = $total, item_tax_id = $tax_id, item_order = $item_order, item_quote_id = $quote_id");
 
     // Get Quote Details
-    $sql = mysqli_query($mysqli,"SELECT quote_client_id, quote_discount_amount, quote_number, quote_prefix FROM quotes WHERE quote_id = $quote_id");
+    $sql = mysqli_query($mysqli,"SELECT quote_client_id, quote_discount_amount, quote_discount_type, quote_number, quote_prefix FROM quotes WHERE quote_id = $quote_id");
     $row = mysqli_fetch_assoc($sql);
     $quote_prefix = escapeSql($row['quote_prefix']);
     $quote_number = escapeSql($row['quote_number']);
     $quote_discount_amount = floatval($row['quote_discount_amount']);
+    $quote_discount_type = $row['quote_discount_type'] === 'percent' ? 'percent' : 'amount';
     $client_id = intval($row['quote_client_id']);
 
     //add up the total of all items
     $sql = mysqli_query($mysqli,"SELECT item_total FROM quote_items WHERE item_quote_id = $quote_id");
-    $quote_amount = 0;
+    $quote_subtotal = 0;
     while($row = mysqli_fetch_assoc($sql)) {
         $item_total = floatval($row['item_total']);
-        $quote_amount = $quote_amount + $item_total;
+        $quote_subtotal = $quote_subtotal + $item_total;
     }
-    $new_quote_amount = $quote_amount - $quote_discount_amount;
+    $new_quote_amount = $quote_subtotal - calculateDiscountAmount($quote_subtotal, $quote_discount_amount, $quote_discount_type);
 
     mysqli_query($mysqli,"UPDATE quotes SET quote_amount = $new_quote_amount WHERE quote_id = $quote_id");
 
@@ -315,12 +318,13 @@ if (isset($_POST['edit_quote_item'])) {
     $quote_id = intval($row['item_quote_id']);
 
     //Get Discount Amount
-    $sql = mysqli_query($mysqli,"SELECT quote_client_id, quote_discount_amount, quote_number, quote_prefix FROM quotes WHERE quote_id = $quote_id");
+    $sql = mysqli_query($mysqli,"SELECT quote_client_id, quote_discount_amount, quote_discount_type, quote_number, quote_prefix FROM quotes WHERE quote_id = $quote_id");
     $row = mysqli_fetch_assoc($sql);
     $quote_prefix = escapeSql($row['quote_prefix']);
     $quote_number = intval($row['quote_number']);
     $client_id = intval($row['quote_client_id']);
     $quote_discount = floatval($row['quote_discount_amount']);
+    $quote_discount_type = $row['quote_discount_type'] === 'percent' ? 'percent' : 'amount';
 
     enforceClientAccess();
 
@@ -329,7 +333,8 @@ if (isset($_POST['edit_quote_item'])) {
     //Update Quote Balances by tallying up items
     $sql_quote_total = mysqli_query($mysqli,"SELECT SUM(item_total) AS quote_total FROM quote_items WHERE item_quote_id = $quote_id");
     $row = mysqli_fetch_assoc($sql_quote_total);
-    $new_quote_amount = floatval($row['quote_total']) - $quote_discount;
+    $quote_total = floatval($row['quote_total']);
+    $new_quote_amount = $quote_total - calculateDiscountAmount($quote_total, $quote_discount, $quote_discount_type);
 
     mysqli_query($mysqli,"UPDATE quotes SET quote_amount = $new_quote_amount WHERE quote_id = $quote_id");
 
@@ -390,14 +395,14 @@ if (isset($_POST['edit_quote'])) {
 
     //Calculate the new quote amount
     $sql = mysqli_query($mysqli,"SELECT item_total FROM quote_items WHERE item_quote_id = $quote_id");
-    $quote_amount = 0;
+    $quote_subtotal = 0;
     while($row = mysqli_fetch_assoc($sql)) {
         $item_total = floatval($row['item_total']);
-        $quote_amount = $quote_amount + $item_total;
+        $quote_subtotal = $quote_subtotal + $item_total;
     }
-    $quote_amount = $quote_amount - $quote_discount;
+    $quote_amount = $quote_subtotal - calculateDiscountAmount($quote_subtotal, $quote_discount, $quote_discount_type);
 
-    mysqli_query($mysqli,"UPDATE quotes SET quote_scope = '$scope', quote_date = '$date', quote_expire = '$expire', quote_discount_amount = '$quote_discount', quote_amount = '$quote_amount', quote_category_id = $category WHERE quote_id = $quote_id");
+    mysqli_query($mysqli,"UPDATE quotes SET quote_scope = '$scope', quote_date = '$date', quote_expire = '$expire', quote_discount_amount = '$quote_discount', quote_discount_type = '$quote_discount_type', quote_amount = '$quote_amount', quote_category_id = $category WHERE quote_id = $quote_id");
 
     logAudit("Quote", "Edit", "$session_name edited quote $quote_prefix$quote_number", $client_id, $quote_id);
 
@@ -469,19 +474,23 @@ if (isset($_GET['delete_quote_item'])) {
     $item_tax = floatval($row['item_tax']);
     $item_total = floatval($row['item_total']);
 
-    $sql = mysqli_query($mysqli,"SELECT quote_amount, quote_client_id, quote_number, quote_prefix FROM quotes WHERE quote_id = $quote_id");
+    $sql = mysqli_query($mysqli,"SELECT quote_discount_amount, quote_discount_type, quote_client_id, quote_number, quote_prefix FROM quotes WHERE quote_id = $quote_id");
     $row = mysqli_fetch_assoc($sql);
     $quote_prefix = escapeSql($row['quote_prefix']);
     $quote_number = escapeSql($row['quote_number']);
     $client_id = intval($row['quote_client_id']);
+    $quote_discount = floatval($row['quote_discount_amount']);
+    $quote_discount_type = $row['quote_discount_type'] === 'percent' ? 'percent' : 'amount';
 
     enforceClientAccess();
 
-    $new_quote_amount = floatval($row['quote_amount']) - $item_total;
+    mysqli_query($mysqli,"DELETE FROM quote_items WHERE item_id = $item_id");
+
+    $sql_quote_total = mysqli_query($mysqli,"SELECT SUM(item_total) AS quote_total FROM quote_items WHERE item_quote_id = $quote_id");
+    $quote_total = floatval(mysqli_fetch_assoc($sql_quote_total)['quote_total']);
+    $new_quote_amount = $quote_total - calculateDiscountAmount($quote_total, $quote_discount, $quote_discount_type);
 
     mysqli_query($mysqli,"UPDATE quotes SET quote_amount = $new_quote_amount WHERE quote_id = $quote_id");
-
-    mysqli_query($mysqli,"DELETE FROM quote_items WHERE item_id = $item_id");
 
     logAudit("Quote", "Edit", "$session_name removed item $item_name from $quote_prefix$quote_number", $client_id, $quote_id);
 
@@ -781,8 +790,9 @@ if (isset($_GET['export_quote_pdf'])) {
             contact_email, contact_extension, contact_mobile, contact_mobile_country_code,
             contact_phone, contact_phone_country_code, location_address, location_city,
             location_country, location_state, location_zip, quote_amount, quote_category_id,
-            quote_created_at, quote_currency_code, quote_date, quote_discount_amount, quote_expire,
-            quote_id, quote_note, quote_number, quote_prefix, quote_scope, quote_status, quote_url_key FROM quotes
+            quote_created_at, quote_currency_code, quote_date, quote_discount_amount, quote_discount_type,
+            quote_expire, quote_id, quote_note, quote_number, quote_prefix, quote_scope, quote_status,
+            quote_url_key FROM quotes
         LEFT JOIN clients ON quote_client_id = client_id
         LEFT JOIN contacts ON clients.client_id = contacts.contact_client_id AND contact_primary = 1
         LEFT JOIN locations ON clients.client_id = locations.location_client_id AND location_primary = 1
@@ -801,6 +811,7 @@ if (isset($_GET['export_quote_pdf'])) {
     $quote_expire = escapeHtml($row['quote_expire']);
     $quote_amount = floatval($row['quote_amount']);
     $quote_discount = floatval($row['quote_discount_amount']);
+    $quote_discount_type = $row['quote_discount_type'] === 'percent' ? 'percent' : 'amount';
     $quote_currency_code = escapeHtml($row['quote_currency_code']);
     $quote_note = escapeHtml($row['quote_note']);
     $quote_url_key = escapeHtml($row['quote_url_key']);
@@ -967,7 +978,9 @@ if (isset($_GET['export_quote_pdf'])) {
             <table width="100%" cellpadding="3" cellspacing="0">
                 <tr><td>Subtotal:</td><td align="right">' . numfmt_format_currency($currency_format, $sub_total, $quote_currency_code) . '</td></tr>';
     if ($quote_discount > 0) {
-        $html .= '<tr><td>Discount:</td><td align="right">-' . numfmt_format_currency($currency_format, $quote_discount, $quote_currency_code) . '</td></tr>';
+        $discount_label = $quote_discount_type === 'percent' ? 'Discount (' . rtrim(rtrim(number_format($quote_discount, 2), '0'), '.') . '%):' : 'Discount:';
+        $discount_display_amount = calculateDiscountAmount($sub_total + $total_tax, $quote_discount, $quote_discount_type);
+        $html .= '<tr><td>' . $discount_label . '</td><td align="right">-' . numfmt_format_currency($currency_format, $discount_display_amount, $quote_currency_code) . '</td></tr>';
     }
     if ($total_tax > 0) {
         $html .= '<tr><td>Tax:</td><td align="right">' . numfmt_format_currency($currency_format, $total_tax, $quote_currency_code) . '</td></tr>';

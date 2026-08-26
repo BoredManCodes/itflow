@@ -7,7 +7,7 @@ enforceUserPermission('module_sales', 2);
 $invoice_id = intval($_GET['id']);
 
 $sql = mysqli_query($mysqli, "SELECT client_id, client_name, invoice_category_id, invoice_created_at, invoice_date,
-    invoice_discount_amount, invoice_due, invoice_number, invoice_prefix, invoice_scope FROM invoices LEFT JOIN clients ON invoice_client_id = client_id WHERE invoice_id = $invoice_id LIMIT 1");
+    invoice_discount_amount, invoice_discount_type, invoice_due, invoice_number, invoice_prefix, invoice_scope FROM invoices LEFT JOIN clients ON invoice_client_id = client_id WHERE invoice_id = $invoice_id LIMIT 1");
 
 $row = mysqli_fetch_assoc($sql);
 $invoice_prefix = escapeHtml($row['invoice_prefix']);
@@ -16,6 +16,7 @@ $invoice_scope = escapeHtml($row['invoice_scope']);
 $invoice_date = escapeHtml($row['invoice_date']);
 $invoice_due = escapeHtml($row['invoice_due']);
 $invoice_discount = floatval($row['invoice_discount_amount']);
+$invoice_discount_type = $row['invoice_discount_type'] === 'percent' ? 'percent' : 'amount';
 $invoice_created_at = escapeHtml($row['invoice_created_at']);
 $category_id = intval($row['invoice_category_id']);
 $client_id = intval($row['client_id']);
@@ -92,12 +93,22 @@ ob_start();
         </div>
 
         <div class='form-group'>
-            <label>Discount Amount</label>
+            <label>Discount</label>
             <div class='input-group'>
                 <div class='input-group-prepend'>
                     <span class='input-group-text'><i class='fa fa-fw fa-dollar-sign'></i></span>
                 </div>
                 <input type='text' class='form-control' inputmode="decimal" pattern="-?[0-9]*\.?[0-9]{0,2}" name='invoice_discount' placeholder='0.00' value="<?= number_format($invoice_discount, 2, '.', '') ?>">
+                <div class='input-group-append'>
+                    <select class='form-control' name='invoice_discount_type' style="max-width: 130px; flex: none;">
+                        <option value='amount' <?php if ($invoice_discount_type === 'amount') {
+                                                    echo 'selected';
+                                                } ?>>$ Amount</option>
+                        <option value='percent' <?php if ($invoice_discount_type === 'percent') {
+                                                    echo 'selected';
+                                                } ?>>% Percent</option>
+                    </select>
+                </div>
             </div>
         </div>
 

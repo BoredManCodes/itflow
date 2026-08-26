@@ -18,7 +18,7 @@ if (isset($_POST['add_invoice'])) {
 
     enforceClientAccess();
 
-    $invoice_amount = 0 - $invoice_discount;     // Calc amount if discount is applied, otherwise wrongly shows 0
+    $invoice_amount = 0 - calculateDiscountAmount(0, $invoice_discount, $invoice_discount_type);     // Calc amount if discount is applied, otherwise wrongly shows 0
 
     // Get Net Terms
     $client_net_terms = intval(getFieldById('clients', $client_id, 'client_net_terms'));
@@ -37,7 +37,7 @@ if (isset($_POST['add_invoice'])) {
     //Generate a unique URL key for clients to access
     $url_key = randomString(32);
 
-    mysqli_query($mysqli,"INSERT INTO invoices SET invoice_prefix = '$config_invoice_prefix', invoice_number = $invoice_number, invoice_scope = '$scope', invoice_date = '$date', invoice_due = DATE_ADD('$date', INTERVAL $client_net_terms day), invoice_discount_amount = '$invoice_discount', invoice_amount = '$invoice_amount', invoice_currency_code = '$session_company_currency', invoice_category_id = $category, invoice_status = 'Draft', invoice_url_key = '$url_key', invoice_client_id = $client_id");
+    mysqli_query($mysqli,"INSERT INTO invoices SET invoice_prefix = '$config_invoice_prefix', invoice_number = $invoice_number, invoice_scope = '$scope', invoice_date = '$date', invoice_due = DATE_ADD('$date', INTERVAL $client_net_terms day), invoice_discount_amount = '$invoice_discount', invoice_discount_type = '$invoice_discount_type', invoice_amount = '$invoice_amount', invoice_currency_code = '$session_company_currency', invoice_category_id = $category, invoice_status = 'Draft', invoice_url_key = '$url_key', invoice_client_id = $client_id");
 
     $invoice_id = mysqli_insert_id($mysqli);
 
@@ -75,15 +75,15 @@ if (isset($_POST['edit_invoice'])) {
 
     // Calculate new total
     $sql = mysqli_query($mysqli,"SELECT item_total FROM invoice_items WHERE item_invoice_id = $invoice_id");
-    $invoice_amount = 0;
+    $invoice_subtotal = 0;
     while($row = mysqli_fetch_assoc($sql)) {
         $item_total = floatval($row['item_total']);
-        $invoice_amount = $invoice_amount + $item_total;
+        $invoice_subtotal = $invoice_subtotal + $item_total;
     }
-    $invoice_amount = $invoice_amount - $invoice_discount;
+    $invoice_amount = $invoice_subtotal - calculateDiscountAmount($invoice_subtotal, $invoice_discount, $invoice_discount_type);
 
 
-    mysqli_query($mysqli,"UPDATE invoices SET invoice_scope = '$scope', invoice_date = '$date', invoice_due = '$due', invoice_category_id = $category, invoice_discount_amount = '$invoice_discount', invoice_amount = '$invoice_amount' WHERE invoice_id = $invoice_id");
+    mysqli_query($mysqli,"UPDATE invoices SET invoice_scope = '$scope', invoice_date = '$date', invoice_due = '$due', invoice_category_id = $category, invoice_discount_amount = '$invoice_discount', invoice_discount_type = '$invoice_discount_type', invoice_amount = '$invoice_amount' WHERE invoice_id = $invoice_id");
 
     logAudit("Invoice", "Edit", "$session_name edited Invoice $invoice_prefix$invoice_number - $scope", $client_id, $invoice_id);
 
@@ -104,12 +104,13 @@ if (isset($_POST['add_invoice_copy'])) {
 
     //Get Net Terms
     $sql = mysqli_query($mysqli,"SELECT client_net_terms, invoice_amount, invoice_category_id, invoice_client_id,
-        invoice_currency_code, invoice_discount_amount, invoice_note, invoice_number,
+        invoice_currency_code, invoice_discount_amount, invoice_discount_type, invoice_note, invoice_number,
         invoice_prefix, invoice_scope FROM clients, invoices WHERE client_id = invoice_client_id AND invoice_id = $invoice_id");
     $row = mysqli_fetch_assoc($sql);
     $client_net_terms = intval($row['client_net_terms']);
     $invoice_scope = escapeSql($row['invoice_scope']);
     $invoice_discount_amount = floatval($row['invoice_discount_amount']);
+    $invoice_discount_type = $row['invoice_discount_type'] === 'percent' ? 'percent' : 'amount';
     $invoice_amount = floatval($row['invoice_amount']);
     $invoice_currency_code = escapeSql($row['invoice_currency_code']);
     $invoice_note = escapeSql($row['invoice_note']);
@@ -134,7 +135,7 @@ if (isset($_POST['add_invoice_copy'])) {
     //Generate a unique URL key for clients to access
     $url_key = randomString(32);
 
-    mysqli_query($mysqli,"INSERT INTO invoices SET invoice_prefix = '$config_invoice_prefix', invoice_number = $new_invoice_number, invoice_scope = '$invoice_scope', invoice_date = '$date', invoice_due = DATE_ADD('$date', INTERVAL $client_net_terms day), invoice_category_id = $category_id, invoice_status = 'Draft', invoice_discount_amount = $invoice_discount_amount, invoice_amount = $invoice_amount, invoice_currency_code = '$invoice_currency_code', invoice_note = '$invoice_note', invoice_url_key = '$url_key', invoice_client_id = $client_id");
+    mysqli_query($mysqli,"INSERT INTO invoices SET invoice_prefix = '$config_invoice_prefix', invoice_number = $new_invoice_number, invoice_scope = '$invoice_scope', invoice_date = '$date', invoice_due = DATE_ADD('$date', INTERVAL $client_net_terms day), invoice_category_id = $category_id, invoice_status = 'Draft', invoice_discount_amount = $invoice_discount_amount, invoice_discount_type = '$invoice_discount_type', invoice_amount = $invoice_amount, invoice_currency_code = '$invoice_currency_code', invoice_note = '$invoice_note', invoice_url_key = '$url_key', invoice_client_id = $client_id");
 
     $new_invoice_id = mysqli_insert_id($mysqli);
 
@@ -368,11 +369,12 @@ if (isset($_POST['add_invoice_item'])) {
     mysqli_query($mysqli,"INSERT INTO invoice_items SET item_name = '$name', item_description = '$description', item_quantity = $qty, item_price = $price, item_subtotal = $subtotal, item_tax = $tax_amount, item_total = $total, item_order = $item_order, item_tax_id = $tax_id, item_product_id = $product_id, item_invoice_id = $invoice_id");
 
     // Get Discount and Invoice Details
-    $sql = mysqli_query($mysqli,"SELECT invoice_discount_amount, invoice_number, invoice_prefix FROM invoices WHERE invoice_id = $invoice_id");
+    $sql = mysqli_query($mysqli,"SELECT invoice_discount_amount, invoice_discount_type, invoice_number, invoice_prefix FROM invoices WHERE invoice_id = $invoice_id");
     $row = mysqli_fetch_assoc($sql);
     $invoice_prefix = escapeSql($row['invoice_prefix']);
     $invoice_number = intval($row['invoice_number']);
     $invoice_discount = floatval($row['invoice_discount_amount']);
+    $invoice_discount_type = $row['invoice_discount_type'] === 'percent' ? 'percent' : 'amount';
 
     //add up all line items
     $sql = mysqli_query($mysqli,"SELECT item_total FROM invoice_items WHERE item_invoice_id = $invoice_id");
@@ -381,7 +383,7 @@ if (isset($_POST['add_invoice_item'])) {
         $item_total = floatval($row['item_total']);
         $invoice_total = $invoice_total + $item_total;
     }
-    $new_invoice_amount = $invoice_total - $invoice_discount;
+    $new_invoice_amount = $invoice_total - calculateDiscountAmount($invoice_total, $invoice_discount, $invoice_discount_type);
 
     mysqli_query($mysqli,"UPDATE invoices SET invoice_amount = $new_invoice_amount WHERE invoice_id = $invoice_id");
 
@@ -454,12 +456,13 @@ if (isset($_POST['edit_invoice_item'])) {
     $invoice_id = intval($row['item_invoice_id']);
 
     //Get Discount Amount
-    $sql = mysqli_query($mysqli,"SELECT invoice_client_id, invoice_discount_amount, invoice_number, invoice_prefix FROM invoices WHERE invoice_id = $invoice_id");
+    $sql = mysqli_query($mysqli,"SELECT invoice_client_id, invoice_discount_amount, invoice_discount_type, invoice_number, invoice_prefix FROM invoices WHERE invoice_id = $invoice_id");
     $row = mysqli_fetch_assoc($sql);
     $invoice_prefix = escapeSql($row['invoice_prefix']);
     $invoice_number = intval($row['invoice_number']);
     $client_id = intval($row['invoice_client_id']);
     $invoice_discount = floatval($row['invoice_discount_amount']);
+    $invoice_discount_type = $row['invoice_discount_type'] === 'percent' ? 'percent' : 'amount';
 
     enforceClientAccess();
 
@@ -468,7 +471,8 @@ if (isset($_POST['edit_invoice_item'])) {
     //Update Invoice Balances by tallying up invoice items
     $sql_invoice_total = mysqli_query($mysqli,"SELECT SUM(item_total) AS invoice_total FROM invoice_items WHERE item_invoice_id = $invoice_id");
     $row = mysqli_fetch_assoc($sql_invoice_total);
-    $new_invoice_amount = floatval($row['invoice_total']) - $invoice_discount;
+    $invoice_total = floatval($row['invoice_total']);
+    $new_invoice_amount = $invoice_total - calculateDiscountAmount($invoice_total, $invoice_discount, $invoice_discount_type);
 
     mysqli_query($mysqli,"UPDATE invoices SET invoice_amount = $new_invoice_amount WHERE invoice_id = $invoice_id");
 
@@ -499,19 +503,23 @@ if (isset($_GET['delete_invoice_item'])) {
     $item_tax = floatval($row['item_tax']);
     $item_total = floatval($row['item_total']);
 
-    $sql = mysqli_query($mysqli,"SELECT invoice_amount, invoice_client_id, invoice_number, invoice_prefix FROM invoices WHERE invoice_id = $invoice_id");
+    $sql = mysqli_query($mysqli,"SELECT invoice_discount_amount, invoice_discount_type, invoice_client_id, invoice_number, invoice_prefix FROM invoices WHERE invoice_id = $invoice_id");
     $row = mysqli_fetch_assoc($sql);
     $invoice_prefix = escapeSql($row['invoice_prefix']);
     $invoice_number = intval($row['invoice_number']);
     $client_id = intval($row['invoice_client_id']);
+    $invoice_discount = floatval($row['invoice_discount_amount']);
+    $invoice_discount_type = $row['invoice_discount_type'] === 'percent' ? 'percent' : 'amount';
 
     enforceClientAccess();
 
-    $new_invoice_amount = floatval($row['invoice_amount']) - $item_total;
+    mysqli_query($mysqli,"DELETE FROM invoice_items WHERE item_id = $item_id");
+
+    $sql_invoice_total = mysqli_query($mysqli,"SELECT SUM(item_total) AS invoice_total FROM invoice_items WHERE item_invoice_id = $invoice_id");
+    $invoice_total = floatval(mysqli_fetch_assoc($sql_invoice_total)['invoice_total']);
+    $new_invoice_amount = $invoice_total - calculateDiscountAmount($invoice_total, $invoice_discount, $invoice_discount_type);
 
     mysqli_query($mysqli,"UPDATE invoices SET invoice_amount = $new_invoice_amount WHERE invoice_id = $invoice_id");
-
-    mysqli_query($mysqli,"DELETE FROM invoice_items WHERE item_id = $item_id");
 
     // Return Product Inventory
     if ($item_product_id) {
@@ -829,9 +837,9 @@ if (isset($_GET['export_invoice_pdf'])) {
             contact_email, contact_extension, contact_mobile, contact_mobile_country_code,
             contact_phone, contact_phone_country_code, invoice_amount, invoice_category_id,
             invoice_created_at, invoice_currency_code, invoice_date, invoice_discount_amount,
-            invoice_due, invoice_id, invoice_note, invoice_number, invoice_prefix, invoice_scope,
-            invoice_status, invoice_url_key, location_address, location_city, location_country,
-            location_state, location_zip FROM invoices
+            invoice_discount_type, invoice_due, invoice_id, invoice_note, invoice_number,
+            invoice_prefix, invoice_scope, invoice_status, invoice_url_key, location_address,
+            location_city, location_country, location_state, location_zip FROM invoices
         LEFT JOIN clients ON invoice_client_id = client_id
         LEFT JOIN contacts ON clients.client_id = contacts.contact_client_id AND contact_primary = 1
         LEFT JOIN locations ON clients.client_id = locations.location_client_id AND location_primary = 1
@@ -850,6 +858,7 @@ if (isset($_GET['export_invoice_pdf'])) {
     $invoice_due = escapeHtml($row['invoice_due']);
     $invoice_amount = floatval($row['invoice_amount']);
     $invoice_discount = floatval($row['invoice_discount_amount']);
+    $invoice_discount_type = $row['invoice_discount_type'] === 'percent' ? 'percent' : 'amount';
     $invoice_currency_code = escapeHtml($row['invoice_currency_code']);
     $invoice_note = escapeHtml($row['invoice_note']);
     $invoice_url_key = escapeHtml($row['invoice_url_key']);
@@ -1023,7 +1032,9 @@ if (isset($_GET['export_invoice_pdf'])) {
             <table width="100%" cellpadding="3" cellspacing="0">
                 <tr><td>Subtotal:</td><td align="right">' . numfmt_format_currency($currency_format, $sub_total, $invoice_currency_code) . '</td></tr>';
     if ($invoice_discount > 0) {
-        $html .= '<tr><td>Discount:</td><td align="right">-' . numfmt_format_currency($currency_format, $invoice_discount, $invoice_currency_code) . '</td></tr>';
+        $discount_label = $invoice_discount_type === 'percent' ? 'Discount (' . rtrim(rtrim(number_format($invoice_discount, 2), '0'), '.') . '%):' : 'Discount:';
+        $discount_display_amount = calculateDiscountAmount($sub_total + $total_tax, $invoice_discount, $invoice_discount_type);
+        $html .= '<tr><td>' . $discount_label . '</td><td align="right">-' . numfmt_format_currency($currency_format, $discount_display_amount, $invoice_currency_code) . '</td></tr>';
     }
     if ($total_tax > 0) {
         $html .= '<tr><td>Tax:</td><td align="right">' . numfmt_format_currency($currency_format, $total_tax, $invoice_currency_code) . '</td></tr>';

@@ -20,9 +20,9 @@ if (isset($_GET['invoice_id'])) {
             contact_email, contact_extension, contact_mobile, contact_mobile_country_code,
             contact_phone, contact_phone_country_code, invoice_amount, invoice_category_id,
             invoice_created_at, invoice_credit_amount, invoice_currency_code, invoice_date,
-            invoice_discount_amount, invoice_due, invoice_id, invoice_note, invoice_number,
-            invoice_prefix, invoice_scope, invoice_status, invoice_url_key, location_address,
-            location_city, location_country, location_state, location_zip FROM invoices
+            invoice_discount_amount, invoice_discount_type, invoice_due, invoice_id, invoice_note,
+            invoice_number, invoice_prefix, invoice_scope, invoice_status, invoice_url_key,
+            location_address, location_city, location_country, location_state, location_zip FROM invoices
         LEFT JOIN clients ON invoice_client_id = client_id
         LEFT JOIN contacts ON client_id = contact_client_id AND contact_primary = 1
         LEFT JOIN locations ON client_id = location_client_id AND location_primary = 1
@@ -53,6 +53,7 @@ if (isset($_GET['invoice_id'])) {
     $invoice_due = escapeHtml($row['invoice_due']);
     $invoice_amount = floatval($row['invoice_amount']);
     $invoice_discount = floatval($row['invoice_discount_amount']);
+    $invoice_discount_type = $row['invoice_discount_type'] === 'percent' ? 'percent' : 'amount';
     $invoice_credit = floatval($row['invoice_credit_amount']);
     $invoice_currency_code = escapeHtml($row['invoice_currency_code']);
     $invoice_note = escapeHtml($row['invoice_note']);
@@ -529,10 +530,13 @@ if (isset($_GET['invoice_id'])) {
                         </tr>
                         <?php
                         if ($invoice_discount > 0) {
+                            $discount_display_amount = calculateDiscountAmount($sub_total + $total_tax, $invoice_discount, $invoice_discount_type);
                             ?>
                             <tr>
-                                <td>Discount:</td>
-                                <td class="text-right">-<?= numfmt_format_currency($currency_format, $invoice_discount, $invoice_currency_code) ?></td>
+                                <td>Discount<?php if ($invoice_discount_type === 'percent') {
+                                                echo ' (' . rtrim(rtrim(number_format($invoice_discount, 2), '0'), '.') . '%)';
+                                            } ?>:</td>
+                                <td class="text-right">-<?= numfmt_format_currency($currency_format, $discount_display_amount, $invoice_currency_code) ?></td>
                             </tr>
                         <?php
                         }

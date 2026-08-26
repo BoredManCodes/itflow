@@ -56,6 +56,19 @@ function getInvoiceBadgeColor($invoice_status) {
 }
 
 /*
+ * Resolves an invoice/quote discount to a currency amount. $discount_type is
+ * 'percent' (discount_value is applied against $base_amount) or 'amount'
+ * (discount_value is already a currency amount, base is ignored).
+ */
+function calculateDiscountAmount($base_amount, $discount_value, $discount_type) {
+    if ($discount_type === 'percent') {
+        return round(floatval($base_amount) * floatval($discount_value) / 100, 2);
+    }
+
+    return round(floatval($discount_value), 2);
+}
+
+/*
  * The display name for a ticket status id, RAW. Escaping is the caller's job -
  * same convention as getFieldById() above.
  */

@@ -16,12 +16,15 @@ if (isset($_POST['add_invoice_recurring'])) {
     $recurring_invoice_frequency = validateRecurringFrequency($_POST['frequency']);
 
     $sql = mysqli_query($mysqli,"SELECT invoice_amount, invoice_category_id, invoice_client_id, invoice_currency_code,
-        invoice_date, invoice_note, invoice_number, invoice_prefix, invoice_scope FROM invoices WHERE invoice_id = $invoice_id");
+        invoice_date, invoice_discount_amount, invoice_discount_type, invoice_note, invoice_number,
+        invoice_prefix, invoice_scope FROM invoices WHERE invoice_id = $invoice_id");
     $row = mysqli_fetch_assoc($sql);
     $invoice_prefix = escapeSql($row['invoice_prefix']);
     $invoice_number = intval($row['invoice_number']);
     $invoice_date = escapeSql(validateDate($row['invoice_date']));
     $invoice_amount = floatval($row['invoice_amount']);
+    $invoice_discount_amount = floatval($row['invoice_discount_amount']);
+    $invoice_discount_type = $row['invoice_discount_type'] === 'percent' ? 'percent' : 'amount';
     $invoice_currency_code = escapeSql($row['invoice_currency_code']);
     $invoice_scope = escapeSql($row['invoice_scope']);
     $invoice_note = escapeSql($row['invoice_note']);
@@ -41,7 +44,7 @@ if (isset($_POST['add_invoice_recurring'])) {
 
     $recurring_invoice_number = mysqli_insert_id($mysqli);
 
-    mysqli_query($mysqli,"INSERT INTO recurring_invoices SET recurring_invoice_prefix = '$config_recurring_invoice_prefix', recurring_invoice_number = $recurring_invoice_number, recurring_invoice_scope = '$invoice_scope', recurring_invoice_frequency = '$recurring_invoice_frequency', recurring_invoice_next_date = DATE_ADD('$invoice_date', INTERVAL 1 $recurring_invoice_frequency), recurring_invoice_status = 1, recurring_invoice_amount = $invoice_amount, recurring_invoice_currency_code = '$invoice_currency_code', recurring_invoice_note = '$invoice_note', recurring_invoice_category_id = $category_id, recurring_invoice_client_id = $client_id");
+    mysqli_query($mysqli,"INSERT INTO recurring_invoices SET recurring_invoice_prefix = '$config_recurring_invoice_prefix', recurring_invoice_number = $recurring_invoice_number, recurring_invoice_scope = '$invoice_scope', recurring_invoice_frequency = '$recurring_invoice_frequency', recurring_invoice_next_date = DATE_ADD('$invoice_date', INTERVAL 1 $recurring_invoice_frequency), recurring_invoice_status = 1, recurring_invoice_discount_amount = $invoice_discount_amount, recurring_invoice_discount_type = '$invoice_discount_type', recurring_invoice_amount = $invoice_amount, recurring_invoice_currency_code = '$invoice_currency_code', recurring_invoice_note = '$invoice_note', recurring_invoice_category_id = $category_id, recurring_invoice_client_id = $client_id");
 
     $recurring_invoice_id = mysqli_insert_id($mysqli);
 
@@ -124,6 +127,7 @@ if (isset($_POST['edit_recurring_invoice'])) {
     $scope = escapeSql($_POST['scope']);
     $status = intval($_POST['status']);
     $recurring_invoice_discount = floatval($_POST['recurring_invoice_discount']);
+    $recurring_invoice_discount_type = ($_POST['recurring_invoice_discount_type'] ?? '') === 'percent' ? 'percent' : 'amount';
 
     // Get Recurring Invoice Details and Client ID for Logging
     $sql = mysqli_query($mysqli,"SELECT recurring_invoice_prefix, recurring_invoice_number, recurring_invoice_client_id FROM recurring_invoices WHERE recurring_invoice_id = $recurring_invoice_id");
@@ -136,14 +140,14 @@ if (isset($_POST['edit_recurring_invoice'])) {
 
     //Calculate new total
     $sql = mysqli_query($mysqli,"SELECT item_total FROM recurring_invoice_items WHERE item_recurring_invoice_id = $recurring_invoice_id");
-    $recurring_invoice_amount = 0;
+    $recurring_invoice_subtotal = 0;
     while($row = mysqli_fetch_assoc($sql)) {
         $item_total = floatval($row['item_total']);
-        $recurring_invoice_amount = $recurring_invoice_amount + $item_total;
+        $recurring_invoice_subtotal = $recurring_invoice_subtotal + $item_total;
     }
-    $recurring_invoice_amount = $recurring_invoice_amount - $recurring_invoice_discount;
+    $recurring_invoice_amount = $recurring_invoice_subtotal - calculateDiscountAmount($recurring_invoice_subtotal, $recurring_invoice_discount, $recurring_invoice_discount_type);
 
-    mysqli_query($mysqli,"UPDATE recurring_invoices SET recurring_invoice_scope = '$scope', recurring_invoice_frequency = '$frequency', recurring_invoice_next_date = '$next_date', recurring_invoice_category_id = $category, recurring_invoice_discount_amount = $recurring_invoice_discount, recurring_invoice_amount = $recurring_invoice_amount, recurring_invoice_status = $status WHERE recurring_invoice_id = $recurring_invoice_id");
+    mysqli_query($mysqli,"UPDATE recurring_invoices SET recurring_invoice_scope = '$scope', recurring_invoice_frequency = '$frequency', recurring_invoice_next_date = '$next_date', recurring_invoice_category_id = $category, recurring_invoice_discount_amount = $recurring_invoice_discount, recurring_invoice_discount_type = '$recurring_invoice_discount_type', recurring_invoice_amount = $recurring_invoice_amount, recurring_invoice_status = $status WHERE recurring_invoice_id = $recurring_invoice_id");
 
     mysqli_query($mysqli,"INSERT INTO history SET history_status = '$status', history_description = 'Recurring Invoice edited', history_recurring_invoice_id = $recurring_invoice_id");
 
@@ -231,22 +235,23 @@ if (isset($_POST['add_recurring_invoice_item'])) {
     mysqli_query($mysqli,"INSERT INTO recurring_invoice_items SET item_name = '$name', item_description = '$description', item_quantity = $qty, item_price = $price, item_subtotal = $subtotal, item_tax = $tax_amount, item_total = $total, item_tax_id = $tax_id, item_order = $item_order, item_recurring_invoice_id = $recurring_invoice_id");
 
 
-    $sql = mysqli_query($mysqli,"SELECT recurring_invoice_client_id, recurring_invoice_discount_amount, recurring_invoice_number,
-        recurring_invoice_prefix FROM recurring_invoices WHERE recurring_invoice_id = $recurring_invoice_id");
+    $sql = mysqli_query($mysqli,"SELECT recurring_invoice_client_id, recurring_invoice_discount_amount, recurring_invoice_discount_type,
+        recurring_invoice_number, recurring_invoice_prefix FROM recurring_invoices WHERE recurring_invoice_id = $recurring_invoice_id");
     $row = mysqli_fetch_assoc($sql);
     $recurring_invoice_discount = floatval($row['recurring_invoice_discount_amount']);
+    $recurring_invoice_discount_type = $row['recurring_invoice_discount_type'] === 'percent' ? 'percent' : 'amount';
     $recurring_invoice_prefix = escapeSql($row['recurring_invoice_prefix']);
     $recurring_invoice_number = intval($row['recurring_invoice_number']);
     $client_id = intval($row['recurring_invoice_client_id']);
 
     //add up all the items
     $sql = mysqli_query($mysqli,"SELECT item_total FROM recurring_invoice_items WHERE item_recurring_invoice_id = $recurring_invoice_id");
-    $recurring_invoice_amount = 0;
+    $recurring_invoice_subtotal = 0;
     while($row = mysqli_fetch_assoc($sql)) {
         $item_total = floatval($row['item_total']);
-        $recurring_invoice_amount = $recurring_invoice_amount + $item_total;
+        $recurring_invoice_subtotal = $recurring_invoice_subtotal + $item_total;
     }
-    $recurring_invoice_amount = $recurring_invoice_amount - $recurring_invoice_discount;
+    $recurring_invoice_amount = $recurring_invoice_subtotal - calculateDiscountAmount($recurring_invoice_subtotal, $recurring_invoice_discount, $recurring_invoice_discount_type);
 
     mysqli_query($mysqli,"UPDATE recurring_invoices SET recurring_invoice_amount = $recurring_invoice_amount WHERE recurring_invoice_id = $recurring_invoice_id");
 
@@ -291,13 +296,14 @@ if (isset($_POST['edit_recurring_invoice_item'])) {
     $recurring_invoice_id = intval($row['item_recurring_invoice_id']);
 
     //Get Discount Amount
-    $sql = mysqli_query($mysqli,"SELECT recurring_invoice_client_id, recurring_invoice_discount_amount, recurring_invoice_number,
-        recurring_invoice_prefix FROM recurring_invoices WHERE recurring_invoice_id = $recurring_invoice_id");
+    $sql = mysqli_query($mysqli,"SELECT recurring_invoice_client_id, recurring_invoice_discount_amount, recurring_invoice_discount_type,
+        recurring_invoice_number, recurring_invoice_prefix FROM recurring_invoices WHERE recurring_invoice_id = $recurring_invoice_id");
     $row = mysqli_fetch_assoc($sql);
     $recurring_invoice_prefix = escapeSql($row['recurring_invoice_prefix']);
     $recurring_invoice_number = intval($row['recurring_invoice_number']);
     $client_id = intval($row['recurring_invoice_client_id']);
     $recurring_invoice_discount = floatval($row['recurring_invoice_discount_amount']);
+    $recurring_invoice_discount_type = $row['recurring_invoice_discount_type'] === 'percent' ? 'percent' : 'amount';
 
     enforceClientAccess();
 
@@ -306,7 +312,8 @@ if (isset($_POST['edit_recurring_invoice_item'])) {
     //Update Invoice Balances by tallying up invoice items
     $sql_recurring_invoice_total = mysqli_query($mysqli,"SELECT SUM(item_total) AS recurring_invoice_total FROM recurring_invoice_items WHERE item_recurring_invoice_id = $recurring_invoice_id");
     $row = mysqli_fetch_assoc($sql_recurring_invoice_total);
-    $new_recurring_invoice_amount = floatval($row['recurring_invoice_total']) - $recurring_invoice_discount;
+    $recurring_invoice_total = floatval($row['recurring_invoice_total']);
+    $new_recurring_invoice_amount = $recurring_invoice_total - calculateDiscountAmount($recurring_invoice_total, $recurring_invoice_discount, $recurring_invoice_discount_type);
 
     mysqli_query($mysqli,"UPDATE recurring_invoices SET recurring_invoice_amount = $new_recurring_invoice_amount WHERE recurring_invoice_id = $recurring_invoice_id");
 
@@ -363,20 +370,24 @@ if (isset($_GET['delete_recurring_invoice_item'])) {
     $item_tax = floatval($row['item_tax']);
     $item_total = floatval($row['item_total']);
 
-    $sql = mysqli_query($mysqli,"SELECT recurring_invoice_amount, recurring_invoice_client_id, recurring_invoice_number,
-        recurring_invoice_prefix FROM recurring_invoices WHERE recurring_invoice_id = $recurring_invoice_id");
+    $sql = mysqli_query($mysqli,"SELECT recurring_invoice_discount_amount, recurring_invoice_discount_type, recurring_invoice_client_id,
+        recurring_invoice_number, recurring_invoice_prefix FROM recurring_invoices WHERE recurring_invoice_id = $recurring_invoice_id");
     $row = mysqli_fetch_assoc($sql);
     $recurring_invoice_prefix = escapeSql($row['recurring_invoice_prefix']);
     $recurring_invoice_number = intval($row['recurring_invoice_number']);
     $client_id = intval($row['recurring_invoice_client_id']);
+    $recurring_invoice_discount = floatval($row['recurring_invoice_discount_amount']);
+    $recurring_invoice_discount_type = $row['recurring_invoice_discount_type'] === 'percent' ? 'percent' : 'amount';
 
     enforceClientAccess();
 
-    $new_recurring_invoice_amount = floatval($row['recurring_invoice_amount']) - $item_total;
+    mysqli_query($mysqli,"DELETE FROM recurring_invoice_items WHERE item_id = $item_id");
+
+    $sql_recurring_invoice_total = mysqli_query($mysqli,"SELECT SUM(item_total) AS recurring_invoice_total FROM recurring_invoice_items WHERE item_recurring_invoice_id = $recurring_invoice_id");
+    $recurring_invoice_total = floatval(mysqli_fetch_assoc($sql_recurring_invoice_total)['recurring_invoice_total']);
+    $new_recurring_invoice_amount = $recurring_invoice_total - calculateDiscountAmount($recurring_invoice_total, $recurring_invoice_discount, $recurring_invoice_discount_type);
 
     mysqli_query($mysqli,"UPDATE recurring_invoices SET recurring_invoice_amount = $new_recurring_invoice_amount WHERE recurring_invoice_id = $recurring_invoice_id");
-
-    mysqli_query($mysqli,"DELETE FROM recurring_invoice_items WHERE item_id = $item_id");
 
     logAudit("Recurring Invoice", "Edit", "$session_name removed item $item_name from recurring invoice $recurring_invoice_prefix$recurring_invoice_number", $client_id);
 
@@ -396,9 +407,9 @@ if (isset($_GET['force_recurring'])) {
 
     $sql_recurring_invoices = mysqli_query($mysqli,"SELECT client_net_terms, recurring_invoice_amount, recurring_invoice_category_id,
         recurring_invoice_client_id, recurring_invoice_currency_code,
-        recurring_invoice_discount_amount, recurring_invoice_frequency, recurring_invoice_id,
-        recurring_invoice_last_sent, recurring_invoice_next_date, recurring_invoice_note,
-        recurring_invoice_scope, recurring_invoice_status FROM recurring_invoices, clients WHERE client_id = recurring_invoice_client_id AND recurring_invoice_id = $recurring_invoice_id");
+        recurring_invoice_discount_amount, recurring_invoice_discount_type, recurring_invoice_frequency,
+        recurring_invoice_id, recurring_invoice_last_sent, recurring_invoice_next_date,
+        recurring_invoice_note, recurring_invoice_scope, recurring_invoice_status FROM recurring_invoices, clients WHERE client_id = recurring_invoice_client_id AND recurring_invoice_id = $recurring_invoice_id");
 
     $row = mysqli_fetch_assoc($sql_recurring_invoices);
     $recurring_invoice_id = intval($row['recurring_invoice_id']);
@@ -408,6 +419,7 @@ if (isset($_GET['force_recurring'])) {
     $recurring_invoice_last_sent = escapeSql($row['recurring_invoice_last_sent']);
     $recurring_invoice_next_date = escapeSql($row['recurring_invoice_next_date']);
     $recurring_invoice_discount_amount = floatval($row['recurring_invoice_discount_amount']);
+    $recurring_invoice_discount_type = $row['recurring_invoice_discount_type'] === 'percent' ? 'percent' : 'amount';
     $recurring_invoice_amount = floatval($row['recurring_invoice_amount']);
     $recurring_invoice_currency_code = escapeSql($row['recurring_invoice_currency_code']);
     $recurring_invoice_note = escapeSql($row['recurring_invoice_note']);
@@ -431,7 +443,7 @@ if (isset($_GET['force_recurring'])) {
     //Generate a unique URL key for clients to access
     $url_key = randomString(32);
 
-    mysqli_query($mysqli,"INSERT INTO invoices SET invoice_prefix = '$config_invoice_prefix', invoice_number = $new_invoice_number, invoice_scope = '$recurring_invoice_scope', invoice_date = CURDATE(), invoice_due = DATE_ADD(CURDATE(), INTERVAL $client_net_terms day), invoice_discount_amount = $recurring_invoice_discount_amount, invoice_amount = $recurring_invoice_amount, invoice_currency_code = '$recurring_invoice_currency_code', invoice_note = '$recurring_invoice_note', invoice_category_id = $category_id, invoice_status = 'Sent', invoice_url_key = '$url_key', invoice_recurring_invoice_id = $recurring_invoice_id, invoice_client_id = $client_id");
+    mysqli_query($mysqli,"INSERT INTO invoices SET invoice_prefix = '$config_invoice_prefix', invoice_number = $new_invoice_number, invoice_scope = '$recurring_invoice_scope', invoice_date = CURDATE(), invoice_due = DATE_ADD(CURDATE(), INTERVAL $client_net_terms day), invoice_discount_amount = $recurring_invoice_discount_amount, invoice_discount_type = '$recurring_invoice_discount_type', invoice_amount = $recurring_invoice_amount, invoice_currency_code = '$recurring_invoice_currency_code', invoice_note = '$recurring_invoice_note', invoice_category_id = $category_id, invoice_status = 'Sent', invoice_url_key = '$url_key', invoice_recurring_invoice_id = $recurring_invoice_id, invoice_client_id = $client_id");
 
     $new_invoice_id = mysqli_insert_id($mysqli);
 
@@ -471,8 +483,8 @@ if (isset($_GET['force_recurring'])) {
 
     //Update Recurring Balances by tallying up recurring items also update recurring dates
     $sql_recurring_invoice_total = mysqli_query($mysqli,"SELECT SUM(item_total) AS recurring_invoice_total FROM recurring_invoice_items WHERE item_recurring_invoice_id = $recurring_invoice_id");
-    $row = mysqli_fetch_assoc($sql_recurring_invoice_total);
-    $new_recurring_invoice_amount = floatval($row['recurring_invoice_total']) - $recurring_invoice_discount_amount;
+    $recurring_invoice_total = floatval(mysqli_fetch_assoc($sql_recurring_invoice_total)['recurring_invoice_total']);
+    $new_recurring_invoice_amount = $recurring_invoice_total - calculateDiscountAmount($recurring_invoice_total, $recurring_invoice_discount_amount, $recurring_invoice_discount_type);
 
     mysqli_query($mysqli,"UPDATE recurring_invoices SET recurring_invoice_amount = $new_recurring_invoice_amount, recurring_invoice_last_sent = CURDATE(), recurring_invoice_next_date = DATE_ADD(CURDATE(), INTERVAL 1 $recurring_invoice_frequency) WHERE recurring_invoice_id = $recurring_invoice_id");
 

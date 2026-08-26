@@ -22,8 +22,8 @@ if (isset($_GET['invoice_id'], $_GET['url_key']) && !isset($_GET['payment_intent
     $sql = mysqli_query(
         $mysqli,
         "SELECT client_id, client_name, invoice_amount, invoice_currency_code, invoice_date,
-            invoice_discount_amount, invoice_due, invoice_id, invoice_number, invoice_prefix,
-            invoice_status FROM invoices
+            invoice_discount_amount, invoice_discount_type, invoice_due, invoice_id, invoice_number,
+            invoice_prefix, invoice_status FROM invoices
          LEFT JOIN clients ON invoice_client_id = client_id
          WHERE invoice_id = $invoice_id
          AND invoice_url_key = '$invoice_url_key'
@@ -47,6 +47,7 @@ if (isset($_GET['invoice_id'], $_GET['url_key']) && !isset($_GET['payment_intent
     $invoice_date          = escapeHtml($row['invoice_date']);
     $invoice_due           = escapeHtml($row['invoice_due']);
     $invoice_discount      = floatval($row['invoice_discount_amount']);
+    $invoice_discount_type = $row['invoice_discount_type'] === 'percent' ? 'percent' : 'amount';
     $invoice_amount        = floatval($row['invoice_amount']);
     $invoice_currency_code = escapeHtml($row['invoice_currency_code']);
     $client_id             = intval($row['client_id']);
@@ -91,10 +92,12 @@ if (isset($_GET['invoice_id'], $_GET['url_key']) && !isset($_GET['payment_intent
                         </thead>
                         <tbody>
                         <?php
+                        $items_total = 0;
                         while ($row = mysqli_fetch_assoc($sql_invoice_items)) {
                             $item_name = escapeHtml($row['item_name']);
                             $item_quantity = floatval($row['item_quantity']);
                             $item_total = floatval($row['item_total']);
+                            $items_total += $item_total;
                         ?>
                             <tr>
                                 <td><?= $item_name ?></td>
@@ -102,11 +105,15 @@ if (isset($_GET['invoice_id'], $_GET['url_key']) && !isset($_GET['payment_intent
                                 <td class="text-right"><?= numfmt_format_currency($currency_format, $item_total, $invoice_currency_code) ?></td>
                             </tr>
                         <?php } ?>
-                        <?php if ($invoice_discount > 0) { ?>
+                        <?php if ($invoice_discount > 0) {
+                            $discount_display_amount = calculateDiscountAmount($items_total, $invoice_discount, $invoice_discount_type);
+                        ?>
                             <tr class="text-right">
-                                <td colspan="2">Discount</td>
+                                <td colspan="2">Discount<?php if ($invoice_discount_type === 'percent') {
+                                                            echo ' (' . rtrim(rtrim(number_format($invoice_discount, 2), '0'), '.') . '%)';
+                                                        } ?></td>
                                 <td>
-                                    <?= numfmt_format_currency($currency_format, $invoice_discount, $invoice_currency_code) ?>
+                                    <?= numfmt_format_currency($currency_format, $discount_display_amount, $invoice_currency_code) ?>
                                 </td>
                             </tr>
                         <?php } ?>

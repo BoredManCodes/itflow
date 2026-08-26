@@ -2753,10 +2753,14 @@ if (isset($_POST['add_invoice_from_ticket'])) {
 
     //Update Invoice Balances
 
-    $sql = mysqli_query($mysqli, "SELECT invoice_amount FROM invoices WHERE invoice_id = $invoice_id");
+    $sql = mysqli_query($mysqli, "SELECT invoice_discount_amount, invoice_discount_type FROM invoices WHERE invoice_id = $invoice_id");
     $row = mysqli_fetch_assoc($sql);
+    $invoice_discount = floatval($row['invoice_discount_amount']);
+    $invoice_discount_type = $row['invoice_discount_type'] === 'percent' ? 'percent' : 'amount';
 
-    $new_invoice_amount = floatval($row['invoice_amount']) + $total;
+    $sql_invoice_total = mysqli_query($mysqli, "SELECT SUM(item_total) AS invoice_total FROM invoice_items WHERE item_invoice_id = $invoice_id");
+    $invoice_total = floatval(mysqli_fetch_assoc($sql_invoice_total)['invoice_total']);
+    $new_invoice_amount = $invoice_total - calculateDiscountAmount($invoice_total, $invoice_discount, $invoice_discount_type);
 
     mysqli_query($mysqli, "UPDATE invoices SET invoice_amount = $new_invoice_amount WHERE invoice_id = $invoice_id");
 
