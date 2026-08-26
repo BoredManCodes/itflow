@@ -356,7 +356,10 @@ function addReply($from_email, $date, $subject, $ticket_number, $message, $attac
                 addToMailQueue($data);
 
                 $config_ticket_prefix_esc = mysqli_real_escape_string($mysqli, $config_ticket_prefix);
-                mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Ticket', notification = '$from_email_esc replied to Ticket $config_ticket_prefix_esc$ticket_number - Subject: $ticket_subject that is assigned to you', notification_action = '/agent/ticket.php?ticket_id=$ticket_id$client_uri', notification_client_id = $client_id, notification_user_id = $ticket_assigned_to");
+                $notification_text = "$from_email_esc replied to Ticket $config_ticket_prefix_esc$ticket_number - Subject: $ticket_subject that is assigned to you";
+                $notification_action = "/agent/ticket.php?ticket_id=$ticket_id$client_uri";
+                mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Ticket', notification = '$notification_text', notification_action = '$notification_action', notification_client_id = $client_id, notification_user_id = $ticket_assigned_to");
+                sendPushNotification($ticket_assigned_to, 'Ticket', $notification_text, $notification_action);
             }
         }
 

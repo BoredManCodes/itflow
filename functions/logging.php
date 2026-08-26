@@ -34,6 +34,8 @@ function appNotify($type, $details, $action = null, $client_id = 0, $entity_id =
         $user_id = intval($row['user_id']);
 
         mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = '$type', notification = '$details', notification_action = '$action', notification_client_id = $client_id, notification_entity_id = $entity_id, notification_user_id = $user_id");
+
+        sendPushNotification($user_id, $type, $details, $action === "NULL" ? null : $action);
     }
 }
 

@@ -220,7 +220,10 @@ if (isset($_POST['add_ticket_task_approver'])) {
     $body = "<i style=\'color: #808080\'>##- Please type your reply above this line -##</i><br><br>Hello,<br><br>A ticket regarding $ticket_subject has a task requiring your approval:- <br>Task name: $task_name<br>Scope/Type: $scope - $type <br><br>To approve this task, please click <a href=\'https://$config_base_url/guest/guest_approve_ticket_task.php?task_approval_id=$approval_id&url_key=$approval_url_key\'>here</a>.<br>If you require further information, please reply to this e-mail.<br><br>Ticket: $ticket_prefix$ticket_number<br>Subject: $ticket_subject<br>Status: $ticket_status<br>Portal: <a href=\'https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$ticket_url_key\'>View ticket</a><br><br>--<br>$company_name - Support<br>$config_ticket_from_email<br>$company_phone";
 
     if ($scope == 'internal' && $type == 'specific' && $session_user_id !== $required_user_id) {
-        mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Ticket', notification = '$session_name needs your approval for ticket $ticket_prefix$ticket_number task $task_name', notification_action = 'ticket.php?ticket_id=$ticket_id', notification_client_id = 0, notification_user_id = $required_user_id");
+        $notification_text = "$session_name needs your approval for ticket $ticket_prefix$ticket_number task $task_name";
+        $notification_action = "ticket.php?ticket_id=$ticket_id";
+        mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Ticket', notification = '$notification_text', notification_action = '$notification_action', notification_client_id = 0, notification_user_id = $required_user_id");
+        sendPushNotification($required_user_id, 'Ticket', $notification_text, $notification_action);
 
         if (!empty($config_smtp_host)) {
             $agent_contact = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT user_name, user_email FROM users WHERE user_id = $required_user_id AND user_archived_at IS NULL"));
@@ -380,7 +383,10 @@ if (isset($_GET['approve_ticket_task'])) {
     mysqli_query($mysqli, "UPDATE task_approvals SET approval_status = 'approved', approval_approved_by = $session_user_id WHERE approval_id = $approval_id AND approval_task_id = $task_id AND approval_scope = 'internal'");
 
     // Notify
-    mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Ticket', notification = '$session_name approved ticket task $task_name', notification_action = 'ticket.php?ticket_id=$ticket_id', notification_client_id = 0, notification_user_id = $created_by");
+    $notification_text = "$session_name approved ticket task $task_name";
+    $notification_action = "ticket.php?ticket_id=$ticket_id";
+    mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Ticket', notification = '$notification_text', notification_action = '$notification_action', notification_client_id = 0, notification_user_id = $created_by");
+    sendPushNotification($created_by, 'Ticket', $notification_text, $notification_action);
     // TODO: Email agent
 
     // Logging

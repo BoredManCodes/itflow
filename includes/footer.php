@@ -54,7 +54,10 @@ if (basename(dirname($_SERVER['REQUEST_URI'])) === 'guest') { ?>
 <script src="/js/date_filter.js"></script>
 
 <?php if (!empty($session_user_id)) { ?>
-<script>window.itflowNotifyUserId = <?= intval($session_user_id) ?>;</script>
+<script>
+    window.itflowNotifyUserId = <?= intval($session_user_id) ?>;
+    window.itflowVapidPublicKey = <?= json_encode($config_vapid_public_key ?? '') ?>;
+</script>
 <script src="/js/browser_notifications.js"></script>
 <?php } ?>
 
