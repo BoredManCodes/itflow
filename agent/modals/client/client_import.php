@@ -15,7 +15,7 @@ ob_start();
     <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
     <div class="modal-body">
         <p><strong>Importing Multiple Contacts:</strong><br>When importing a client, only one contact (which will become the primary contact) and one location (which will become the primary location) can be added initially. To add additional contacts, you will need to click into each client, navigate to the Contacts section, and import multiple contacts individually for each client.</p>
-        <p><strong>Format csv file with headings & data:</strong><br>Client Name, Industry, Referral, Website, Primary Location Name, Location Phone, Location Address, City, State, Postal Code, Country, Primary Contact Name, Title, Contact Phone, Extension, Contact Mobile, Contact Email, Hourly Rate, Currency, Payment Terms, Tax ID, Abbreviation</p>
+        <p><strong>Format csv file with headings & data:</strong><br>Client Name, Industry, Referral, Website, Primary Location Name, Location Phone, Location Address, City, State, Postal Code, Country, Primary Contact Name, Title, Contact Phone, Extension, Contact Mobile, Contact Email, Hourly Rate, Currency, Payment Terms, <?= escapeHtml($config_tax_id_label) ?>, Abbreviation</p>
         <hr>
         <div class="form-group my-4">
             <input type="file" class="form-control-file" name="file" accept=".csv" required>

@@ -903,7 +903,7 @@ if (isset($_GET['export_invoice_pdf'])) {
     $company_website = escapeHtml($row['company_website']);
     $company_tax_id = escapeHtml($row['company_tax_id']);
     if ($config_invoice_show_tax_id && !empty($company_tax_id)) {
-        $company_tax_id_display = "Tax ID: $company_tax_id";
+        $company_tax_id_display = escapeHtml($config_tax_id_label) . ": $company_tax_id";
     } else {
         $company_tax_id_display = "";
     }

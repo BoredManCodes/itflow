@@ -12,7 +12,7 @@ $sql_settings = mysqli_query($mysqli, "SELECT config_azure_client_id, config_azu
     config_invoice_from_email, config_invoice_from_name, config_invoice_late_fee_enable,
     config_invoice_late_fee_percent, config_invoice_next_number,
     config_invoice_paid_notification_email, config_invoice_prefix, config_invoice_show_tax_id,
-    config_log_retention, config_login_key_required, config_login_key_secret,
+    config_tax_id_label, config_log_retention, config_login_key_required, config_login_key_secret,
     config_login_message, config_login_remember_me_expire, config_mail_from_email,
     config_mail_from_name, config_mail_oauth_access_token,
     config_mail_oauth_access_token_expires_at, config_mail_oauth_client_id,
@@ -91,6 +91,7 @@ $config_invoice_late_fee_enable = intval($row['config_invoice_late_fee_enable'])
 $config_invoice_late_fee_percent = floatval($row['config_invoice_late_fee_percent']);
 $config_invoice_paid_notification_email = $row['config_invoice_paid_notification_email'];
 $config_invoice_show_tax_id = intval($row['config_invoice_show_tax_id']);
+$config_tax_id_label = $row['config_tax_id_label'] !== '' && $row['config_tax_id_label'] !== null ? $row['config_tax_id_label'] : 'Tax ID';
 
 // Recurring Invoices
 $config_recurring_invoice_prefix = $row['config_recurring_invoice_prefix'];

@@ -41,6 +41,8 @@ DEFINE("EXPORT_PDF_MAX_ROWS", 2000);
  */
 function getExportColumns($export_type) {
 
+    global $config_tax_id_label;
+
     $registry = [
 
         // Clients - handler joins the primary contact and primary location
@@ -65,7 +67,7 @@ function getExportColumns($export_type) {
             'client_rate'          => ['label' => 'Hourly Rate', 'format' => 'money'],
             'client_currency_code' => ['label' => 'Currency'],
             'client_net_terms'     => ['label' => 'Payment Terms', 'format' => 'number'],
-            'client_tax_id_number' => ['label' => 'Tax ID'],
+            'client_tax_id_number' => ['label' => $config_tax_id_label ?? 'Tax ID'],
             'client_abbreviation'  => ['label' => 'Abbreviation'],
         ],
 

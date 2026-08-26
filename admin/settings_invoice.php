@@ -37,12 +37,22 @@ require_once "includes/inc_all_admin.php";
                     <textarea class="form-control" rows="4" name="config_invoice_footer"><?= escapeHtml($config_invoice_footer) ?></textarea>
                 </div>
 
-                <h5>Show Tax ID On Invoices</h5>
+                <h5>Show <?= escapeHtml($config_tax_id_label) ?> On Invoices</h5>
 
                 <div class="form-group">
                     <div class="custom-control custom-switch">
                         <input type="checkbox" class="custom-control-input" name="config_invoice_show_tax_id" <?php if ($config_invoice_show_tax_id == 1) { echo "checked"; } ?> value="1" id="customSwitch1">
-                        <label class="custom-control-label" for="customSwitch1">Show Tax ID</label>
+                        <label class="custom-control-label" for="customSwitch1">Show <?= escapeHtml($config_tax_id_label) ?></label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Tax ID Label <small class="text-secondary">(rename "Tax ID" everywhere it's shown, e.g. "ABN", "VAT Number")</small></label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text"><i class="fa fa-fw fa-balance-scale"></i></span>
+                        </div>
+                        <input type="text" class="form-control" name="config_tax_id_label" placeholder="Tax ID" maxlength="50" value="<?= escapeHtml($config_tax_id_label) ?>">
                     </div>
                 </div>
 
