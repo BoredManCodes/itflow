@@ -512,7 +512,10 @@ if (isset($_POST['bulk_assign_recurring_ticket'])) {
         if ($session_user_id != $assign_to && $assign_to != 0) {
 
             // App Notification
-            mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Recurring Ticket', notification = '$recurring_ticket_count Recurring Tickets have been assigned to you by $session_name', notification_action = 'recurring_tickets.php?assigned=$assign_to', notification_client_id = $client_id, notification_user_id = $assign_to");
+            $notification_text = "$recurring_ticket_count Recurring Tickets have been assigned to you by $session_name";
+            $notification_action = "recurring_tickets.php?assigned=$assign_to";
+            mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Recurring Ticket', notification = '$notification_text', notification_action = '$notification_action', notification_client_id = $client_id, notification_user_id = $assign_to");
+            sendPushNotification($assign_to, 'Recurring Ticket', $notification_text, $notification_action);
 
             // Agent Email Notification
             if (!empty($config_smtp_provider)) {

@@ -1309,7 +1309,52 @@ if (isset($_POST['send_test_browser_notification'])) {
 
     header('Content-Type: application/json');
 
-    mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Test', notification = 'This is a test notification - browser notifications are working.', notification_action = '/agent/user/user_details.php', notification_user_id = $session_user_id");
+    $notification_text = 'This is a test notification - browser notifications are working.';
+    $notification_action = '/agent/user/user_details.php';
+    mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Test', notification = '$notification_text', notification_action = '$notification_action', notification_user_id = $session_user_id");
+    sendPushNotification($session_user_id, 'Test', $notification_text, $notification_action);
+
+    echo json_encode(['status' => 'success']);
+    exit;
+}
+
+/*
+ * Fired by js/browser_notifications.js after registering /sw.js and
+ * subscribing via the PushManager - saves the subscription so
+ * sendPushNotification() (functions/push.php) can push to this device later,
+ * including while no ITFlow tab or browser window is open at all
+ */
+if (isset($_POST['save_push_subscription'])) {
+
+    validateCSRFToken();
+
+    header('Content-Type: application/json');
+
+    $endpoint = escapeSql($_POST['endpoint'] ?? '');
+    $p256dh = escapeSql($_POST['p256dh'] ?? '');
+    $auth = escapeSql($_POST['auth'] ?? '');
+    $user_agent = escapeSql(substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 255));
+
+    if (empty($endpoint) || empty($p256dh) || empty($auth)) {
+        http_response_code(400);
+        echo json_encode(['status' => 'error']);
+        exit;
+    }
+
+    $endpoint_hash = sha1($endpoint);
+
+    mysqli_query($mysqli, "INSERT INTO push_subscriptions SET
+        push_subscription_user_id = $session_user_id,
+        push_subscription_endpoint = '$endpoint',
+        push_subscription_endpoint_hash = '$endpoint_hash',
+        push_subscription_p256dh = '$p256dh',
+        push_subscription_auth = '$auth',
+        push_subscription_user_agent = '$user_agent'
+        ON DUPLICATE KEY UPDATE
+        push_subscription_user_id = $session_user_id,
+        push_subscription_p256dh = '$p256dh',
+        push_subscription_auth = '$auth',
+        push_subscription_user_agent = '$user_agent'");
 
     echo json_encode(['status' => 'success']);
     exit;

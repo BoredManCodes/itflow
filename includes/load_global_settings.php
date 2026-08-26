@@ -33,7 +33,8 @@ $sql_settings = mysqli_query($mysqli, "SELECT config_azure_client_id, config_azu
     config_ticket_new_ticket_notification_email, config_ticket_next_number,
     config_ticket_ordering, config_ticket_prefix, config_ticket_timer_autostart,
     config_timezone, config_update_last_notified_version, config_update_notification_email,
-    config_whitelabel_enabled, config_whitelabel_key FROM settings WHERE company_id = 1");
+    config_whitelabel_enabled, config_whitelabel_key,
+    config_vapid_public_key, config_vapid_private_key, config_vapid_subject FROM settings WHERE company_id = 1");
 $row = mysqli_fetch_assoc($sql_settings);
 
 // Database version
@@ -171,6 +172,12 @@ $config_whitelabel_key = $row['config_whitelabel_key'];
 // Update notifications
 $config_update_notification_email = $row['config_update_notification_email'];
 $config_update_last_notified_version = $row['config_update_last_notified_version'];
+
+// Web Push (browser notifications) - provisions a VAPID keypair on first use
+$config_vapid_public_key = $row['config_vapid_public_key'];
+$config_vapid_private_key = $row['config_vapid_private_key'];
+$config_vapid_subject = $row['config_vapid_subject'];
+ensureVapidKeys();
 
 
 // Select Arrays

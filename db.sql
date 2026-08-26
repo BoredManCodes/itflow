@@ -1609,6 +1609,28 @@ CREATE TABLE `notifications` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `push_subscriptions`
+--
+
+DROP TABLE IF EXISTS `push_subscriptions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `push_subscriptions` (
+  `push_subscription_id` int(11) NOT NULL AUTO_INCREMENT,
+  `push_subscription_user_id` int(11) NOT NULL,
+  `push_subscription_endpoint` varchar(512) NOT NULL,
+  `push_subscription_endpoint_hash` char(40) NOT NULL,
+  `push_subscription_p256dh` varchar(255) NOT NULL,
+  `push_subscription_auth` varchar(255) NOT NULL,
+  `push_subscription_user_agent` varchar(255) DEFAULT NULL,
+  `push_subscription_created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`push_subscription_id`),
+  UNIQUE KEY `push_subscription_endpoint_hash` (`push_subscription_endpoint_hash`),
+  KEY `push_subscription_user_id` (`push_subscription_user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `payment_methods`
 --
 
@@ -2375,6 +2397,9 @@ CREATE TABLE `settings` (
   `config_module_enable_ticketing` tinyint(1) NOT NULL DEFAULT 1,
   `config_theme` varchar(200) DEFAULT 'blue',
   `config_theme_custom_color` varchar(7) DEFAULT NULL,
+  `config_vapid_public_key` varchar(255) DEFAULT NULL,
+  `config_vapid_private_key` varchar(255) DEFAULT NULL,
+  `config_vapid_subject` varchar(255) DEFAULT NULL,
   `config_telemetry` tinyint(1) DEFAULT 0,
   `config_timezone` varchar(200) NOT NULL DEFAULT 'America/New_York',
   `config_business_days` varchar(20) NOT NULL DEFAULT '1,2,3,4,5',

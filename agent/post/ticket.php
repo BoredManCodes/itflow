@@ -982,7 +982,10 @@ if (isset($_POST['assign_ticket'])) {
     if ($session_user_id != $assigned_to && $assigned_to != 0) {
 
         // App Notification
-        mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Ticket', notification = 'Ticket $ticket_prefix$ticket_number - Subject: $ticket_subject has been assigned to you by $session_name', notification_action = '/agent/ticket.php?ticket_id=$ticket_id$client_uri', notification_client_id = $client_id, notification_user_id = $assigned_to");
+        $notification_text = "Ticket $ticket_prefix$ticket_number - Subject: $ticket_subject has been assigned to you by $session_name";
+        $notification_action = "/agent/ticket.php?ticket_id=$ticket_id$client_uri";
+        mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Ticket', notification = '$notification_text', notification_action = '$notification_action', notification_client_id = $client_id, notification_user_id = $assigned_to");
+        sendPushNotification($assigned_to, 'Ticket', $notification_text, $notification_action);
 
         // Email Notification
         if (!empty($config_smtp_provider)) {
@@ -1196,7 +1199,10 @@ if (isset($_POST['bulk_assign_ticket'])) {
         if ($session_user_id != $assign_to && $assign_to != 0) {
 
             // App Notification
-            mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Ticket', notification = '$ticket_count Tickets have been assigned to you by $session_name', notification_action = 'tickets.php?status=Open&assigned=$assign_to', notification_client_id = $client_id, notification_user_id = $assign_to");
+            $notification_text = "$ticket_count Tickets have been assigned to you by $session_name";
+            $notification_action = "tickets.php?status=Open&assigned=$assign_to";
+            mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Ticket', notification = '$notification_text', notification_action = '$notification_action', notification_client_id = $client_id, notification_user_id = $assign_to");
+            sendPushNotification($assign_to, 'Ticket', $notification_text, $notification_action);
 
             // Agent Email Notification
             if (!empty($config_smtp_provider)) {
@@ -1726,16 +1732,22 @@ if (isset($_POST['bulk_ticket_reply'])) {
                 addToMailQueue($data);
             } //End Mail IF
 
+            $notification_action = "/agent/ticket.php?ticket_id=$ticket_id$client_uri";
+
             // Notification for assigned ticket user
             if ($session_user_id != $ticket_assigned_to && $ticket_assigned_to != 0) {
 
-                mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Ticket', notification = '$session_name updated Ticket $ticket_prefix$ticket_number - Subject: $ticket_subject that is assigned to you', notification_action = '/agent/ticket.php?ticket_id=$ticket_id$client_uri', notification_client_id = $client_id, notification_user_id = $ticket_assigned_to");
+                $notification_text = "$session_name updated Ticket $ticket_prefix$ticket_number - Subject: $ticket_subject that is assigned to you";
+                mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Ticket', notification = '$notification_text', notification_action = '$notification_action', notification_client_id = $client_id, notification_user_id = $ticket_assigned_to");
+                sendPushNotification($ticket_assigned_to, 'Ticket', $notification_text, $notification_action);
             }
 
             // Notification for user that opened the ticket
             if ($session_user_id != $ticket_created_by && $ticket_created_by != 0) {
 
-                mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Ticket', notification = '$session_name updated Ticket $ticket_prefix$ticket_number - Subject: $ticket_subject that you opened', notification_action = '/agent/ticket.php?ticket_id=$ticket_id$client_uri', notification_client_id = $client_id, notification_user_id = $ticket_created_by");
+                $notification_text = "$session_name updated Ticket $ticket_prefix$ticket_number - Subject: $ticket_subject that you opened";
+                mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Ticket', notification = '$notification_text', notification_action = '$notification_action', notification_client_id = $client_id, notification_user_id = $ticket_created_by");
+                sendPushNotification($ticket_created_by, 'Ticket', $notification_text, $notification_action);
             }
         } // End Ticket Lopp
 
@@ -2076,14 +2088,20 @@ if (isset($_POST['add_ticket_reply'])) {
         }
         //End Mail IF
 
+        $notification_action = "/agent/ticket.php?ticket_id=$ticket_id$client_uri";
+
         // Notification for assigned ticket user
         if ($session_user_id != $ticket_assigned_to && $ticket_assigned_to != 0) {
-            mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Ticket', notification = '$session_name updated Ticket $ticket_prefix$ticket_number - Subject: $ticket_subject that is assigned to you', notification_action = '/agent/ticket.php?ticket_id=$ticket_id$client_uri', notification_client_id = $client_id, notification_user_id = $ticket_assigned_to");
+            $notification_text = "$session_name updated Ticket $ticket_prefix$ticket_number - Subject: $ticket_subject that is assigned to you";
+            mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Ticket', notification = '$notification_text', notification_action = '$notification_action', notification_client_id = $client_id, notification_user_id = $ticket_assigned_to");
+            sendPushNotification($ticket_assigned_to, 'Ticket', $notification_text, $notification_action);
         }
 
         // Notification for user that opened the ticket
         if ($session_user_id != $ticket_created_by && $ticket_created_by != 0) {
-            mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Ticket', notification = '$session_name updated Ticket $ticket_prefix$ticket_number - Subject: $ticket_subject that you opened', notification_action = '/agent/ticket.php?ticket_id=$ticket_id$client_uri', notification_client_id = $client_id, notification_user_id = $ticket_created_by");
+            $notification_text = "$session_name updated Ticket $ticket_prefix$ticket_number - Subject: $ticket_subject that you opened";
+            mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Ticket', notification = '$notification_text', notification_action = '$notification_action', notification_client_id = $client_id, notification_user_id = $ticket_created_by");
+            sendPushNotification($ticket_created_by, 'Ticket', $notification_text, $notification_action);
         }
 
         // Handle first response

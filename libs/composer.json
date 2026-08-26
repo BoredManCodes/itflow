@@ -1,6 +1,8 @@
 {
     "require": {
-        "directorytree/imapengine": "^1.24"
+        "directorytree/imapengine": "^1.24",
+        "minishlink/web-push": "^11.0",
+        "php-http/curl-client": "^2.4"
     },
     "config": {
         "platform": {

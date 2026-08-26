@@ -11,6 +11,56 @@ window.ItflowNotify = (function () {
     var pollMs = 30000;
     var started = false;
 
+    // Converts the VAPID public key (base64url, from window.itflowVapidPublicKey)
+    // into the Uint8Array PushManager.subscribe() expects
+    function urlBase64ToUint8Array(base64String) {
+        var padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+        var base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+        var rawData = window.atob(base64);
+        var outputArray = new Uint8Array(rawData.length);
+        for (var i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+    }
+
+    // Registers the service worker and subscribes for real Web Push - this is
+    // what lets a notification fire with no ITFlow tab or browser open at
+    // all, unlike the polling below which only works while a tab is open.
+    // Safe to call repeatedly - reuses an existing subscription if there is one.
+    function subscribeForPush() {
+        if (!("serviceWorker" in navigator) || !("PushManager" in window) || !window.itflowVapidPublicKey) {
+            return;
+        }
+
+        navigator.serviceWorker.register("/sw.js").then(function (registration) {
+            return registration.pushManager.getSubscription().then(function (existing) {
+                if (existing) {
+                    return existing;
+                }
+                return registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(window.itflowVapidPublicKey)
+                });
+            });
+        }).then(function (subscription) {
+            if (!subscription) {
+                return;
+            }
+            var json = subscription.toJSON();
+            jQuery.post("/agent/ajax.php", {
+                save_push_subscription: true,
+                endpoint: json.endpoint,
+                p256dh: json.keys.p256dh,
+                auth: json.keys.auth,
+                csrf_token: jQuery('input[name="csrf_token"]').val()
+            });
+        }).catch(function () {
+            // Push subscription is a bonus on top of the polling below - if it
+            // fails (blocked, unsupported, etc.) there's nothing more to do here
+        });
+    }
+
     function getLastId() {
         return parseInt(localStorage.getItem(lastIdKey), 10) || 0;
     }
@@ -98,6 +148,7 @@ window.ItflowNotify = (function () {
             baseline();
         }
         setInterval(poll, pollMs);
+        subscribeForPush();
     }
 
     if (supported) {
