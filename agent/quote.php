@@ -20,8 +20,9 @@ if (isset($_GET['quote_id'])) {
             contact_email, contact_extension, contact_mobile, contact_mobile_country_code,
             contact_phone, contact_phone_country_code, location_address, location_city,
             location_country, location_state, location_zip, quote_amount, quote_category_id,
-            quote_created_at, quote_currency_code, quote_date, quote_discount_amount, quote_expire,
-            quote_id, quote_note, quote_number, quote_prefix, quote_scope, quote_status, quote_url_key FROM quotes
+            quote_created_at, quote_currency_code, quote_date, quote_discount_amount, quote_discount_type,
+            quote_expire, quote_id, quote_note, quote_number, quote_prefix, quote_scope, quote_status,
+            quote_url_key FROM quotes
         LEFT JOIN clients ON quote_client_id = client_id
         LEFT JOIN contacts ON clients.client_id = contacts.contact_client_id AND contact_primary = 1
         LEFT JOIN locations ON clients.client_id = locations.location_client_id AND location_primary = 1
@@ -52,6 +53,7 @@ if (isset($_GET['quote_id'])) {
     $quote_expire = escapeHtml($row['quote_expire']);
     $quote_amount = floatval($row['quote_amount']);
     $quote_discount = floatval($row['quote_discount_amount']);
+    $quote_discount_type = $row['quote_discount_type'] === 'percent' ? 'percent' : 'amount';
     $quote_currency_code = escapeHtml($row['quote_currency_code']);
     $quote_note = escapeHtml($row['quote_note']);
     $quote_url_key = escapeHtml($row['quote_url_key']);
@@ -488,10 +490,14 @@ if (isset($_GET['quote_id'])) {
                                 <td>Subtotal:</td>
                                 <td class="text-end"><?= numfmt_format_currency($currency_format, $sub_total, $quote_currency_code) ?></td>
                             </tr>
-                            <?php if ($quote_discount > 0) { ?>
+                            <?php if ($quote_discount > 0) {
+                                $discount_display_amount = calculateDiscountAmount($sub_total + $total_tax, $quote_discount, $quote_discount_type);
+                            ?>
                                 <tr>
-                                    <td>Discount:</td>
-                                    <td class="text-end">-<?= numfmt_format_currency($currency_format, $quote_discount, $quote_currency_code) ?></td>
+                                    <td>Discount<?php if ($quote_discount_type === 'percent') {
+                                                    echo ' (' . rtrim(rtrim(number_format($quote_discount, 2), '0'), '.') . '%)';
+                                                } ?>:</td>
+                                    <td class="text-end">-<?= numfmt_format_currency($currency_format, $discount_display_amount, $quote_currency_code) ?></td>
                                 </tr>
                             <?php } ?>
                             <?php if ($total_tax > 0) { ?>

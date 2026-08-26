@@ -683,7 +683,7 @@ if ($config_send_invoice_reminders == 1) {
 //Loop through all recurring that match today's date and is active
 $sql_recurring_invoices = mysqli_query($mysqli, "SELECT client_name, client_net_terms, recurring_invoice_amount, recurring_invoice_category_id,
     recurring_invoice_client_id, recurring_invoice_currency_code,
-    recurring_invoice_discount_amount, recurring_invoice_email_notify,
+    recurring_invoice_discount_amount, recurring_invoice_discount_type, recurring_invoice_email_notify,
     recurring_invoice_frequency, recurring_invoice_id, recurring_invoice_last_sent,
     recurring_invoice_next_date, recurring_invoice_note, recurring_invoice_scope,
     recurring_invoice_status, recurring_payment_account_id, recurring_payment_currency_code,
@@ -702,6 +702,7 @@ while ($row = mysqli_fetch_assoc($sql_recurring_invoices)) {
     $recurring_invoice_last_sent = escapeSql($row['recurring_invoice_last_sent']);
     $recurring_invoice_next_date = escapeSql($row['recurring_invoice_next_date']);
     $recurring_invoice_discount_amount = floatval($row['recurring_invoice_discount_amount']);
+    $recurring_invoice_discount_type = $row['recurring_invoice_discount_type'] === 'percent' ? 'percent' : 'amount';
     $recurring_invoice_amount = floatval($row['recurring_invoice_amount']);
     $recurring_invoice_currency_code = escapeSql($row['recurring_invoice_currency_code']);
     $recurring_invoice_note = escapeSql($row['recurring_invoice_note']);
@@ -730,7 +731,7 @@ while ($row = mysqli_fetch_assoc($sql_recurring_invoices)) {
     //Generate a unique URL key for clients to access
     $url_key = randomString(32);
 
-    mysqli_query($mysqli, "INSERT INTO invoices SET invoice_prefix = '$config_invoice_prefix', invoice_number = $new_invoice_number, invoice_scope = '$recurring_invoice_scope', invoice_date = CURDATE(), invoice_due = DATE_ADD(CURDATE(), INTERVAL $client_net_terms day), invoice_discount_amount = $recurring_invoice_discount_amount, invoice_amount = $recurring_invoice_amount, invoice_currency_code = '$recurring_invoice_currency_code', invoice_note = '$recurring_invoice_note', invoice_category_id = $category_id, invoice_status = 'Sent', invoice_url_key = '$url_key', invoice_recurring_invoice_id = $recurring_invoice_id, invoice_client_id = $client_id");
+    mysqli_query($mysqli, "INSERT INTO invoices SET invoice_prefix = '$config_invoice_prefix', invoice_number = $new_invoice_number, invoice_scope = '$recurring_invoice_scope', invoice_date = CURDATE(), invoice_due = DATE_ADD(CURDATE(), INTERVAL $client_net_terms day), invoice_discount_amount = $recurring_invoice_discount_amount, invoice_discount_type = '$recurring_invoice_discount_type', invoice_amount = $recurring_invoice_amount, invoice_currency_code = '$recurring_invoice_currency_code', invoice_note = '$recurring_invoice_note', invoice_category_id = $category_id, invoice_status = 'Sent', invoice_url_key = '$url_key', invoice_recurring_invoice_id = $recurring_invoice_id, invoice_client_id = $client_id");
 
     $new_invoice_id = mysqli_insert_id($mysqli);
 

@@ -7,7 +7,7 @@ enforceUserPermission('module_sales', 2);
 $quote_id = intval($_GET['id']);
 
 $sql = mysqli_query($mysqli, "SELECT client_name, quote_category_id, quote_client_id, quote_created_at, quote_date,
-    quote_discount_amount, quote_expire, quote_id, quote_number, quote_prefix, quote_scope FROM quotes LEFT JOIN clients ON quote_client_id = client_id WHERE quote_id = $quote_id LIMIT 1");
+    quote_discount_amount, quote_discount_type, quote_expire, quote_id, quote_number, quote_prefix, quote_scope FROM quotes LEFT JOIN clients ON quote_client_id = client_id WHERE quote_id = $quote_id LIMIT 1");
 
 $row = mysqli_fetch_assoc($sql);
 $quote_id = intval($row['quote_id']);
@@ -17,6 +17,7 @@ $quote_scope = escapeHtml($row['quote_scope']);
 $quote_date = escapeHtml($row['quote_date']);
 $quote_expire = escapeHtml($row['quote_expire']);
 $quote_discount = floatval($row['quote_discount_amount']);
+$quote_discount_type = $row['quote_discount_type'] === 'percent' ? 'percent' : 'amount';
 $quote_created_at = escapeHtml($row['quote_created_at']);
 $quote_category_id = intval($row['quote_category_id']);
 $client_name = escapeHtml($row['client_name']);
@@ -80,10 +81,18 @@ ob_start();
 
 
         <div class='mb-3'>
-            <label>Discount Amount</label>
+            <label>Discount</label>
             <div class='input-group'>
                     <span class='input-group-text'><i class='fa fa-fw fa-dollar-sign'></i></span>
                 <input type='text' class='form-control' inputmode="decimal" pattern="-?[0-9]*\.?[0-9]{0,2}" name='quote_discount' placeholder='0.00' value="<?= number_format($quote_discount, 2, '.', '') ?>">
+                <select class='form-control' name='quote_discount_type' style="max-width: 130px; flex: none;">
+                    <option value='amount' <?php if ($quote_discount_type === 'amount') {
+                                                echo 'selected';
+                                            } ?>>$ Amount</option>
+                    <option value='percent' <?php if ($quote_discount_type === 'percent') {
+                                                echo 'selected';
+                                            } ?>>% Percent</option>
+                </select>
             </div>
         </div>
 

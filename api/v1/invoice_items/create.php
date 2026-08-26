@@ -73,6 +73,7 @@ if (
         $invoice_prefix = escapeSql($invoice_row['invoice_prefix']);
         $invoice_number = intval($invoice_row['invoice_number']);
         $invoice_discount = floatval($invoice_row['invoice_discount_amount']);
+        $invoice_discount_type = $invoice_row['invoice_discount_type'] === 'percent' ? 'percent' : 'amount';
 
         $subtotal = $price * $qty;
 
@@ -169,7 +170,7 @@ if (
             $items_row = mysqli_fetch_assoc($items_sql);
             $invoice_total = floatval($items_row['invoice_total']);
 
-            $new_invoice_amount = $invoice_total - $invoice_discount;
+            $new_invoice_amount = $invoice_total - calculateDiscountAmount($invoice_total, $invoice_discount, $invoice_discount_type);
 
             mysqli_query(
                 $mysqli,

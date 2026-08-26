@@ -87,10 +87,14 @@ ob_start();
         </div>
 
         <div class='mb-3'>
-            <label>Discount Amount</label>
+            <label>Discount</label>
             <div class='input-group'>
                     <span class='input-group-text'><i class='fa fa-fw fa-dollar-sign'></i></span>
                 <input type='text' class='form-control' inputmode="decimal" pattern="-?[0-9]*\.?[0-9]{0,2}" name='invoice_discount' placeholder='0.00'>
+                <select class='form-control' name='invoice_discount_type' style="max-width: 130px; flex: none;">
+                    <option value='amount' selected>$ Amount</option>
+                    <option value='percent'>% Percent</option>
+                </select>
             </div>
         </div>
 

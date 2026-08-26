@@ -7,7 +7,7 @@ enforceUserPermission('module_sales', 2);
 $recurring_invoice_id = intval($_GET['id']);
 
 $sql = mysqli_query($mysqli, "SELECT recurring_invoice_category_id, recurring_invoice_client_id, recurring_invoice_created_at,
-    recurring_invoice_discount_amount, recurring_invoice_frequency,
+    recurring_invoice_discount_amount, recurring_invoice_discount_type, recurring_invoice_frequency,
     recurring_invoice_next_date, recurring_invoice_number, recurring_invoice_prefix,
     recurring_invoice_scope, recurring_invoice_status FROM recurring_invoices WHERE recurring_invoice_id = $recurring_invoice_id LIMIT 1");
 
@@ -20,6 +20,7 @@ $recurring_invoice_status = escapeHtml($row['recurring_invoice_status']);
 $recurring_invoice_created_at = date('Y-m-d', strtotime($row['recurring_invoice_created_at']));
 $recurring_invoice_next_date = escapeHtml($row['recurring_invoice_next_date']);
 $recurring_invoice_discount = floatval($row['recurring_invoice_discount_amount']);
+$recurring_invoice_discount_type = $row['recurring_invoice_discount_type'] === 'percent' ? 'percent' : 'amount';
 $category_id = intval($row['recurring_invoice_category_id']);
 $client_id = intval($row['recurring_invoice_client_id']);
 
@@ -94,10 +95,18 @@ ob_start();
         </div>
 
         <div class='mb-3'>
-            <label>Discount Amount</label>
+            <label>Discount</label>
             <div class='input-group'>
                     <span class='input-group-text'><i class='fa fa-fw fa-dollar-sign'></i></span>
                 <input type='text' class='form-control' inputmode="decimal" pattern="-?[0-9]*\.?[0-9]{0,2}" name='recurring_invoice_discount' placeholder='0.00' value="<?= number_format($recurring_invoice_discount, 2, '.', '') ?>">
+                <select class='form-control' name='recurring_invoice_discount_type' style="max-width: 130px; flex: none;">
+                    <option value='amount' <?php if ($recurring_invoice_discount_type === 'amount') {
+                                                echo 'selected';
+                                            } ?>>$ Amount</option>
+                    <option value='percent' <?php if ($recurring_invoice_discount_type === 'percent') {
+                                                echo 'selected';
+                                            } ?>>% Percent</option>
+                </select>
             </div>
         </div>
 

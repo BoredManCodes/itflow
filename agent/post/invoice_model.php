@@ -5,6 +5,7 @@ $date = escapeSql($_POST['date']);
 $category = intval($_POST['category']);
 $scope = escapeSql($_POST['scope']);
 $invoice_discount = floatval($_POST['invoice_discount']);
+$invoice_discount_type = ($_POST['invoice_discount_type'] ?? '') === 'percent' ? 'percent' : 'amount';
 $recurring_discount = floatval($_POST['recurring_discount']);
 
 $config_invoice_prefix = escapeSql($config_invoice_prefix);
