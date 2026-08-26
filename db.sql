@@ -2364,6 +2364,7 @@ CREATE TABLE `settings` (
   `config_invoice_late_fee_percent` decimal(5,2) NOT NULL DEFAULT 0.00,
   `config_invoice_paid_notification_email` varchar(200) DEFAULT NULL,
   `config_invoice_show_tax_id` tinyint(1) NOT NULL DEFAULT 0,
+  `config_tax_id_label` varchar(50) NOT NULL DEFAULT 'Tax ID',
   `config_recurring_invoice_prefix` varchar(200) DEFAULT NULL,
   `config_recurring_invoice_next_number` int(11) NOT NULL DEFAULT 1,
   `config_quote_prefix` varchar(200) DEFAULT NULL,

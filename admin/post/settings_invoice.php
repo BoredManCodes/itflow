@@ -10,6 +10,7 @@ if (isset($_POST['edit_invoice_settings'])) {
     $config_invoice_next_number = intval($_POST['config_invoice_next_number']);
     $config_invoice_footer = escapeSql($_POST['config_invoice_footer']);
     $config_invoice_show_tax_id = intval($_POST['config_invoice_show_tax_id'] ?? 0);
+    $config_tax_id_label = escapeSql(trim($_POST['config_tax_id_label']) !== '' ? trim($_POST['config_tax_id_label']) : 'Tax ID');
     $config_invoice_late_fee_enable = intval($_POST['config_invoice_late_fee_enable'] ?? 0);
     $config_invoice_late_fee_percent = floatval($_POST['config_invoice_late_fee_percent']);
     $config_recurring_invoice_prefix = escapeSql($_POST['config_recurring_invoice_prefix']);
@@ -19,7 +20,7 @@ if (isset($_POST['edit_invoice_settings'])) {
         $config_invoice_paid_notification_email = escapeSql($_POST['config_invoice_paid_notification_email']);
     }
 
-    mysqli_query($mysqli,"UPDATE settings SET config_invoice_prefix = '$config_invoice_prefix', config_invoice_next_number = $config_invoice_next_number, config_invoice_footer = '$config_invoice_footer', config_invoice_show_tax_id = $config_invoice_show_tax_id, config_invoice_late_fee_enable = $config_invoice_late_fee_enable, config_invoice_late_fee_percent = $config_invoice_late_fee_percent, config_invoice_paid_notification_email = '$config_invoice_paid_notification_email', config_recurring_invoice_prefix = '$config_recurring_invoice_prefix', config_recurring_invoice_next_number = $config_recurring_invoice_next_number WHERE company_id = 1");
+    mysqli_query($mysqli,"UPDATE settings SET config_invoice_prefix = '$config_invoice_prefix', config_invoice_next_number = $config_invoice_next_number, config_invoice_footer = '$config_invoice_footer', config_invoice_show_tax_id = $config_invoice_show_tax_id, config_tax_id_label = '$config_tax_id_label', config_invoice_late_fee_enable = $config_invoice_late_fee_enable, config_invoice_late_fee_percent = $config_invoice_late_fee_percent, config_invoice_paid_notification_email = '$config_invoice_paid_notification_email', config_recurring_invoice_prefix = '$config_recurring_invoice_prefix', config_recurring_invoice_next_number = $config_recurring_invoice_next_number WHERE company_id = 1");
 
     logAudit("Settings", "Edit", "$session_name edited invoice settings");
 

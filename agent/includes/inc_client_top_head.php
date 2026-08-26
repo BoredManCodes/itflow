@@ -204,7 +204,7 @@
                 </span>
             </div>
             <?php if(!empty($client_tax_id_number)) { ?>
-            <div class="ms-1 mt-1 text-secondary">Tax ID
+            <div class="ms-1 mt-1 text-secondary"><?= escapeHtml($config_tax_id_label) ?>
                 <span class="text-dark float-end font-monospace"><?= $client_tax_id_number ?></span>
             </div>
             <?php } ?>

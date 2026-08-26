@@ -209,11 +209,11 @@ ob_start();
                     </div>
 
                     <div class="mb-3">
-                        <label>Tax ID</label>
+                        <label><?= escapeHtml($config_tax_id_label) ?></label>
                         <div class="input-group">
                                 <span class="input-group-text"><i class="fa fa-fw fa-balance-scale"></i></span>
                             <input type="text" class="form-control" name="tax_id_number" maxlength="255"
-                                   placeholder="Tax ID Number" value="<?= $client_tax_id_number ?>">
+                                   placeholder="<?= escapeHtml($config_tax_id_label) ?> Number" value="<?= $client_tax_id_number ?>">
                         </div>
                     </div>
 
