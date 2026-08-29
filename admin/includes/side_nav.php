@@ -85,6 +85,14 @@
                         </a>
                     </li>
                 <?php } ?>
+                <?php if ($config_module_enable_ticketing) { ?>
+                    <li class="nav-item">
+                        <a href="/admin/ticket_rules.php" class="nav-link <?= (in_array(basename($_SERVER['PHP_SELF']), ['ticket_rules.php', 'ticket_rule.php']) ? 'active' : '') ?>">
+                            <i class="nav-icon fas fa-random"></i>
+                            <p>Ticket Rules</p>
+                        </a>
+                    </li>
+                <?php } ?>
 
                 <li class="nav-header">INTEGRATIONS</li>
                 <?php if ($config_module_enable_accounting) { ?>
