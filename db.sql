@@ -2299,6 +2299,7 @@ CREATE TABLE `settings` (
   `config_ticket_new_ticket_notification_email` varchar(200) DEFAULT NULL,
   `config_ticket_default_billable` tinyint(1) NOT NULL DEFAULT 0,
   `config_ticket_timer_autostart` tinyint(1) NOT NULL DEFAULT 0,
+  `config_ticket_auto_assign_user_id` int(11) NOT NULL DEFAULT 0,
   `config_enable_cron` tinyint(1) NOT NULL DEFAULT 0,
   `config_recurring_auto_send_invoice` tinyint(1) NOT NULL DEFAULT 1,
   `config_enable_alert_domain_expire` tinyint(1) NOT NULL DEFAULT 1,

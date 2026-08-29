@@ -71,6 +71,29 @@ require_once "includes/inc_all_admin.php";
                 </div>
 
                 <div class="form-group">
+                    <label>Auto-assign new tickets to <small class="text-secondary">(Applies to unassigned tickets raised from the portal, email parsing, the API, and recurring/project schedules)</small></label>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text"><i class="fa fa-fw fa-user-check"></i></span>
+                        </div>
+                        <select class="form-control select2" name="config_ticket_auto_assign_user_id">
+                            <option value="0">- Disabled -</option>
+                            <?php
+                            $sql_auto_assign_techs = mysqli_query(
+                                $mysqli,
+                                "SELECT user_id, user_name FROM users
+                                WHERE user_type = 1 AND user_status = 1 AND user_archived_at IS NULL ORDER BY user_name ASC"
+                            );
+                            while ($row = mysqli_fetch_assoc($sql_auto_assign_techs)) {
+                                $auto_assign_user_id = intval($row['user_id']);
+                                $auto_assign_user_name = escapeHtml($row['user_name']); ?>
+                                <option value="<?= $auto_assign_user_id ?>" <?php if ($config_ticket_auto_assign_user_id == $auto_assign_user_id) { echo "selected"; } ?>><?= $auto_assign_user_name ?></option>
+                            <?php } ?>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
                     <label>Email address to notify when new tickets are raised <small class="text-secondary">(Ideally a distribution list/shared mailbox)</small></label>
                     <div class="input-group">
                         <div class="input-group-prepend">
