@@ -150,6 +150,7 @@ if (isset($_POST['bulk_force_recurring_tickets'])) {
                 $id = mysqli_insert_id($mysqli);
                 applyTicketSla($id);
                 applyTicketAutoAssign($id);
+                applyTicketRules($id);
 
                 // Copy Additional Assets from Recurring ticket to new ticket
                 mysqli_query($mysqli, "INSERT INTO ticket_assets (ticket_id, asset_id)
@@ -298,6 +299,7 @@ if (isset($_GET['force_recurring_ticket'])) {
         $id = mysqli_insert_id($mysqli);
         applyTicketSla($id);
         applyTicketAutoAssign($id);
+        applyTicketRules($id);
 
         // Copy Additional Assets from Recurring ticket to new ticket
         mysqli_query($mysqli, "INSERT INTO ticket_assets (ticket_id, asset_id)

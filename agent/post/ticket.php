@@ -79,6 +79,7 @@ if (isset($_POST['add_ticket'])) {
     $ticket_id = mysqli_insert_id($mysqli);
     applyTicketSla($ticket_id);
     applyTicketAutoAssign($ticket_id);
+    applyTicketRules($ticket_id);
 
     // Tasks come from the editable rows in the modal, which the template pre-fills.
     // Fall back to copying the template directly for a form without that section.
@@ -251,6 +252,7 @@ if (isset($_POST['save_quick_timer'])) {
         $ticket_id = mysqli_insert_id($mysqli);
         applyTicketSla($ticket_id);
         applyTicketAutoAssign($ticket_id);
+        applyTicketRules($ticket_id);
 
         logAudit("Ticket", "Create", "$session_name created ticket $config_ticket_prefix$ticket_number - $subject", $client_id, $ticket_id);
 
@@ -1890,6 +1892,7 @@ if (isset($_POST['bulk_add_asset_ticket'])) {
             $ticket_id = mysqli_insert_id($mysqli);
             applyTicketSla($ticket_id);
             applyTicketAutoAssign($ticket_id);
+            applyTicketRules($ticket_id);
 
             // Add Tasks
             if (!empty($_POST['tasks'])) {

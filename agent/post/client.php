@@ -794,6 +794,7 @@ if (isset($_POST['bulk_add_client_ticket'])) {
             $ticket_id = mysqli_insert_id($mysqli);
             applyTicketSla($ticket_id);
             applyTicketAutoAssign($ticket_id);
+            applyTicketRules($ticket_id);
 
             // Add Tasks
             if (!empty($_POST['tasks'])) {
