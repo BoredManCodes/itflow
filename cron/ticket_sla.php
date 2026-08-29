@@ -103,10 +103,6 @@ function sendSlaAlert($ticket, $subject_line, $body_line)
     // appNotify inserts what it is given - escape at the boundary
     appNotify("Ticket SLA", escapeSql("$subject_line - $ticket_ref - $ticket_subject"), "/agent/ticket.php?ticket_id=$ticket_id", $client_id, $ticket_id);
 
-    // addToMailQueue also inserts raw, and the body's link markup contains
-    // single quotes - escape whole strings once here. The body keeps its HTML,
-    // so it gets mysqli_real_escape_string directly (escapeSql strips tags),
-    // same as the ticket email parser does for its bodies.
     $rendered = renderEmailTemplate('ticket_sla_alert', [
         'sla_event' => $subject_line,
         'ticket_ref' => $ticket_ref,
@@ -114,15 +110,15 @@ function sendSlaAlert($ticket, $subject_line, $body_line)
         'sla_message' => $body_line,
         'ticket_url' => "https://$config_base_url/agent/ticket.php?ticket_id=$ticket_id",
     ]);
-    $email_subject = escapeSql($rendered['subject']);
-    $email_body = mysqli_real_escape_string($mysqli, $rendered['body']);
+    $email_subject = $rendered['subject'];
+    $email_body = $rendered['body'];
 
     $email_data = [];
 
     if (!empty($sla_notification_email)) {
         $email_data[] = [
             'from' => $from_email,
-            'from_name' => escapeSql($from_name),
+            'from_name' => $from_name,
             'recipient' => $sla_notification_email,
             'recipient_name' => 'SLA Notifications',
             'subject' => $email_subject,
@@ -134,9 +130,9 @@ function sendSlaAlert($ticket, $subject_line, $body_line)
     if (!empty($ticket['user_email']) && strtolower($ticket['user_email']) != strtolower($sla_notification_email)) {
         $email_data[] = [
             'from' => $from_email,
-            'from_name' => escapeSql($from_name),
+            'from_name' => $from_name,
             'recipient' => $ticket['user_email'],
-            'recipient_name' => escapeSql(strval($ticket['user_name'])),
+            'recipient_name' => strval($ticket['user_name']),
             'subject' => $email_subject,
             'body' => $email_body,
         ];

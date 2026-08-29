@@ -751,12 +751,12 @@ function addToMailQueue($data) {
     global $mysqli;
 
     foreach ($data as $email) {
-        $from = strval($email['from']);
-        $from_name = strval($email['from_name']);
-        $recipient = strval($email['recipient']);
-        $recipient_name = strval($email['recipient_name']);
-        $subject = strval($email['subject']);
-        $body = strval($email['body']);
+        $from = mysqli_real_escape_string($mysqli, strval($email['from']));
+        $from_name = mysqli_real_escape_string($mysqli, strval($email['from_name']));
+        $recipient = mysqli_real_escape_string($mysqli, strval($email['recipient']));
+        $recipient_name = mysqli_real_escape_string($mysqli, strval($email['recipient_name']));
+        $subject = mysqli_real_escape_string($mysqli, strval($email['subject']));
+        $body = mysqli_real_escape_string($mysqli, strval($email['body']));
 
         $cal_str = '';
         if (isset($email['cal_str'])) {

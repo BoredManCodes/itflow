@@ -187,7 +187,7 @@ function addTicket($contact_id, $contact_name, $contact_email, $client_id, $date
             'recipient' => $contact_email,
             'recipient_name' => $contact_name,
             'subject' => $subject_email,
-            'body' => mysqli_real_escape_string($mysqli, $body)
+            'body' => $body
         ];
     }
 
@@ -219,7 +219,7 @@ function addTicket($contact_id, $contact_name, $contact_email, $client_id, $date
             'recipient' => $config_ticket_new_ticket_notification_email,
             'recipient_name' => $config_ticket_from_name,
             'subject' => $email_subject,
-            'body' => mysqli_real_escape_string($mysqli, $email_body)
+            'body' => $email_body
         ];
     }
 
@@ -309,7 +309,7 @@ function addReply($from_email, $date, $subject, $ticket_number, $message, $attac
                     'recipient' => $from_email,
                     'recipient_name' => $from_email,
                     'subject' => $email_subject,
-                    'body' => mysqli_real_escape_string($mysqli, $email_body)
+                    'body' => $email_body
                 ]
             ];
 
@@ -378,7 +378,7 @@ function addReply($from_email, $date, $subject, $ticket_number, $message, $attac
                     'ticket_url' => "https://$config_base_url/agent/ticket.php?ticket_id=$ticket_id$client_uri",
                 ]);
                 $email_subject = $rendered['subject'];
-                $email_body    = $rendered['body'] . "<br><br>--------------------------------<br>$message_esc";
+                $email_body    = $rendered['body'] . "<br><br>--------------------------------<br>$message";
 
                 $data = [
                     [
@@ -386,8 +386,8 @@ function addReply($from_email, $date, $subject, $ticket_number, $message, $attac
                         'from_name' => $config_ticket_from_name,
                         'recipient' => $tech_email,
                         'recipient_name' => $tech_name,
-                        'subject' => mysqli_real_escape_string($mysqli, $email_subject),
-                        'body' => mysqli_real_escape_string($mysqli, $email_body)
+                        'subject' => $email_subject,
+                        'body' => $email_body
                     ]
                 ];
                 addToMailQueue($data);

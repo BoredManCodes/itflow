@@ -73,8 +73,8 @@ if (isset($_POST['send_test_email_template'])) {
 
     $data = [
         [
-            'from' => $config_mail_from_email,
-            'from_name' => $config_mail_from_name,
+            'from' => $config_ticket_from_email,
+            'from_name' => $config_ticket_from_name,
             'recipient' => $session_email,
             'recipient_name' => $session_name,
             'subject' => '[TEST] ' . strtr($subject, $sample_tokens),
