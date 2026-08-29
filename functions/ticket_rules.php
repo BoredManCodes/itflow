@@ -235,5 +235,47 @@ function applyTicketRuleAction($mysqli, $ticket_id, $action_type, $action_value)
                 mysqli_query($mysqli, "INSERT INTO ticket_watchers SET watcher_email = '$watcher_email', watcher_ticket_id = $ticket_id");
             }
             break;
+
+        case 'set_billable':
+            $billable = intval($action_value) ? 1 : 0;
+            mysqli_query($mysqli, "UPDATE tickets SET ticket_billable = $billable WHERE ticket_id = $ticket_id");
+            break;
+
+        case 'resolve':
+            // Mirrors agent/post/ticket.php's resolve_ticket handler. Safe to run
+            // mid-creation-flow - it doesn't remove anything, so whatever the
+            // calling creation path still does afterward (attachments, watchers,
+            // notifications) keeps working against a ticket that still exists.
+            mysqli_query($mysqli, "UPDATE tickets SET ticket_status = 4, ticket_resolved_at = NOW() WHERE ticket_id = $ticket_id");
+            syncTicketSlaClock($ticket_id);
+            setTicketResolutionSlaMet($ticket_id);
+            logAudit("Ticket", "Resolve", "Ticket rule resolved the ticket", 0, $ticket_id);
+            triggerCustomAction('ticket_resolve', $ticket_id);
+            break;
+
+        case 'delete':
+            // Mirrors agent/post/ticket.php's delete_ticket handler (hard delete,
+            // same cascade). Unlike resolve, this removes the ticket row while
+            // applyTicketRules() runs mid-creation-flow (before the .eml
+            // attachment, watchers, and "new ticket" notification are added on
+            // most paths) - whatever the caller still does after this returns
+            // will reference a ticket_id that no longer exists. Harmless orphan
+            // rows/notifications can result; nothing fatal.
+            $ticket_row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT ticket_prefix, ticket_number FROM tickets WHERE ticket_id = $ticket_id LIMIT 1"));
+            mysqli_query($mysqli, "DELETE FROM tickets WHERE ticket_id = $ticket_id");
+            mysqli_query($mysqli, "DELETE FROM ticket_replies WHERE ticket_reply_ticket_id = $ticket_id");
+            mysqli_query($mysqli, "DELETE FROM ticket_views WHERE view_ticket_id = $ticket_id");
+            mysqli_query($mysqli, "DELETE FROM ticket_watchers WHERE watcher_ticket_id = $ticket_id");
+            mysqli_query($mysqli, "DELETE FROM ticket_attachments WHERE ticket_attachment_ticket_id = $ticket_id");
+            // __DIR__-anchored, not a relative path - this function is called from many
+            // different entry points (agent/, admin/, client/, cron/, api/v1/tickets/) whose
+            // working directories sit at different depths under the app root, unlike
+            // agent/post/ticket.php's own delete handler which only ever runs from agent/.
+            removeDirectory(__DIR__ . "/../uploads/tickets/$ticket_id");
+            $ticket_prefix = escapeSql($ticket_row['ticket_prefix'] ?? '');
+            $ticket_number = intval($ticket_row['ticket_number'] ?? 0);
+            logAudit("Ticket", "Delete", "Ticket rule deleted $ticket_prefix$ticket_number along with all replies", 0, $ticket_id);
+            triggerCustomAction('ticket_delete', $ticket_id);
+            break;
     }
 }

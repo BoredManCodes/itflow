@@ -6,7 +6,7 @@ defined('FROM_POST_HANDLER') || die("Direct file access is not allowed");
 
 $ticket_rule_condition_fields = ['from_email', 'from_domain', 'subject', 'body', 'ticket_source', 'client_id', 'contact_id'];
 $ticket_rule_condition_operators = ['equals', 'contains', 'starts_with', 'ends_with', 'regex'];
-$ticket_rule_action_types = ['set_priority', 'set_category', 'set_status', 'assign_to', 'apply_template', 'add_watcher'];
+$ticket_rule_action_types = ['set_priority', 'set_category', 'set_status', 'assign_to', 'apply_template', 'add_watcher', 'set_billable', 'resolve', 'delete'];
 // Fields whose value is a lookup key, not free text - the operator is always 'equals' for these
 $ticket_rule_condition_lookup_fields = ['ticket_source', 'client_id', 'contact_id'];
 
@@ -168,9 +168,13 @@ if (isset($_POST['add_ticket_rule_action'])) {
         'assign_to'      => strval(intval($_POST['value_tech'] ?? 0)),
         'apply_template' => strval(intval($_POST['value_template'] ?? 0)),
         'set_category', 'add_watcher' => trim($_POST['value'] ?? ''),
+        // '0' is a real, meaningful choice here ("not billable") - not "nothing selected"
+        'set_billable'   => (isset($_POST['value_billable']) && $_POST['value_billable'] === '1') ? '1' : '0',
+        // No user-supplied value - the action itself (resolve/delete the ticket) is the whole point
+        'resolve', 'delete' => '1',
     };
 
-    if ($value === '' || $value === '0') {
+    if ($value === '' || ($value === '0' && $action_type !== 'set_billable')) {
         flashAlert("Action value cannot be empty", 'error');
         redirect("ticket_rule.php?ticket_rule_id=$ticket_rule_id");
     }
