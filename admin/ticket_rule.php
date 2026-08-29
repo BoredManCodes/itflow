@@ -48,6 +48,9 @@ $action_type_labels = [
     'assign_to'      => 'Assign to',
     'apply_template' => 'Apply template (adds its tasks)',
     'add_watcher'    => 'Add watcher email',
+    'set_billable'   => 'Set billable',
+    'resolve'        => 'Mark resolved',
+    'delete'         => 'Delete ticket',
 ];
 
 // Lookups for the value dropdowns
@@ -108,6 +111,11 @@ function ticketRuleDisplayValue($mysqli, $field_or_type, $value) {
             return escapeHtml($ticket_templates_list[intval($value)] ?? "Template #$value");
         case 'set_status':
             return escapeHtml($ticket_statuses_list[intval($value)] ?? "Status #$value");
+        case 'set_billable':
+            return intval($value) ? 'Yes' : 'No';
+        case 'resolve':
+        case 'delete':
+            return '';
         default:
             return escapeHtml($value);
     }
@@ -309,6 +317,17 @@ function ticketRuleDisplayValue($mysqli, $field_or_type, $value) {
                                 <?php } ?>
                             </select>
                         </div>
+
+                        <div class="action-value-wrap d-none" data-kind="billable">
+                            <select class="form-control form-control-sm mb-2" name="value_billable" disabled>
+                                <option value="1">Yes</option>
+                                <option value="0">No</option>
+                            </select>
+                        </div>
+
+                        <div class="action-value-wrap d-none" data-kind="none">
+                            <small class="text-muted">No value needed - this action just runs.</small>
+                        </div>
                     </div>
 
                     <button type="submit" name="add_ticket_rule_action" class="btn btn-primary btn-sm"><i class="fas fa-fw fa-plus mr-1"></i>Add action</button>
@@ -366,6 +385,9 @@ function ticketRuleDisplayValue($mysqli, $field_or_type, $value) {
         assign_to: 'tech',
         apply_template: 'template',
         add_watcher: 'text',
+        set_billable: 'billable',
+        resolve: 'none',
+        delete: 'none',
     };
 
     function renderActionInputs() {
