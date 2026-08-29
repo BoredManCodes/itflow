@@ -70,7 +70,7 @@ $max_inline_embed_bytes = 2097152; // 2 MB - larger inline images are saved as r
 /** ------------------------------------------------------------------
  * Ticket / Reply helpers (unchanged)
  * ------------------------------------------------------------------ */
-function addTicket($contact_id, $contact_name, $contact_email, $client_id, $date, $subject, $message, $attachments, $original_message_file, $ccs) {
+function addTicket($contact_id, $contact_name, $contact_email, $client_id, $date, $subject, $message, $attachments, $original_message_file, $ccs, $context = []) {
     global $mysqli, $config_app_name, $company_name, $company_phone, $config_ticket_prefix, $config_ticket_client_general_notifications, $config_ticket_new_ticket_notification_email, $config_base_url, $config_ticket_from_name, $config_ticket_from_email, $config_ticket_default_billable, $allowed_extensions;
     $bad_pattern = "/do[\W_]*not[\W_]*reply|no[\W_]*reply/i"; // Email addresses to ignore
 
@@ -110,6 +110,7 @@ function addTicket($contact_id, $contact_name, $contact_email, $client_id, $date
     $id = mysqli_insert_id($mysqli);
     applyTicketSla($id);
     applyTicketAutoAssign($id);
+    applyTicketRules($id, $context);
 
     // Logging
     logAudit("Ticket", "Create", "Email parser: Client contact $contact_email_esc created ticket $ticket_prefix_esc$ticket_number ($subject) ($id)", $client_id, $id);
@@ -820,6 +821,15 @@ foreach ($messages as $message) {
             }
         }
 
+        // Raw email fields for ticket rule conditions (from_email/from_domain/subject/body
+        // only exist for email-parsed tickets - other creation paths never populate them)
+        $ticket_rule_context = [
+            'from_email'  => $from_email,
+            'from_domain' => $from_domain,
+            'subject'     => $subject,
+            'body'        => $message_body,
+        ];
+
         // 3. A known, registered contact?
         if (!$email_processed) {
             $from_email_esc = mysqli_real_escape_string($mysqli, $from_email);
@@ -832,7 +842,7 @@ foreach ($messages as $message) {
                 $contact_email = escapeSql($rowc['contact_email']);
                 $client_id     = intval($rowc['contact_client_id']);
 
-                $email_processed = addTicket($contact_id, $contact_name, $contact_email, $client_id, $date, $subject, $message_body, $attachments, $original_message_file, $ccs);
+                $email_processed = addTicket($contact_id, $contact_name, $contact_email, $client_id, $date, $subject, $message_body, $attachments, $original_message_file, $ccs, $ticket_rule_context);
             }
         }
 
@@ -854,7 +864,7 @@ foreach ($messages as $message) {
                 logAudit("Contact", "Create", "Email parser: created contact " . mysqli_real_escape_string($mysqli, $contact_name), $client_id, $contact_id);
                 triggerCustomAction('contact_create', $contact_id);
 
-                $email_processed = addTicket($contact_id, $contact_name, $contact_email, $client_id, $date, $subject, $message_body, $attachments, $original_message_file, $ccs);
+                $email_processed = addTicket($contact_id, $contact_name, $contact_email, $client_id, $date, $subject, $message_body, $attachments, $original_message_file, $ccs, $ticket_rule_context);
             }
         }
 
@@ -863,7 +873,7 @@ foreach ($messages as $message) {
 
             $bad_from_pattern = "/daemon|postmaster|bounce|mta/i"; //  Stop NDRs with bad subjects raising new tickets
             if (!preg_match($bad_from_pattern, $from_email)) {
-                $email_processed = addTicket(0, $from_name, $from_email, 0, $date, $subject, $message_body, $attachments, $original_message_file, $ccs);
+                $email_processed = addTicket(0, $from_name, $from_email, 0, $date, $subject, $message_body, $attachments, $original_message_file, $ccs, $ticket_rule_context);
 
             } else {
 
