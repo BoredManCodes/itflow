@@ -78,7 +78,7 @@ if (isset($_POST['send_test_email_template'])) {
             'recipient' => $session_email,
             'recipient_name' => $session_name,
             'subject' => '[TEST] ' . strtr($subject, $sample_tokens),
-            'body' => strtr($body, $sample_tokens),
+            'body' => wrapEmailHtml(strtr($body, $sample_tokens)),
         ]
     ];
 

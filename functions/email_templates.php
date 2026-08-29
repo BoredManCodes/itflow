@@ -21,25 +21,25 @@ function emailTemplateDefaults() {
         'ticket_created' => [
             'name' => 'Ticket Created (agent/portal)',
             'subject' => 'Ticket Created - [{ticket_prefix}{ticket_number}] - {ticket_subject}',
-            'body' => "<i style='color: #808080'>##- Please type your reply above this line -##</i><br><br>Hello {contact_name},<br><br>A ticket regarding \"{ticket_subject}\" has been created for you.<br><br>--------------------------------<br>{ticket_details}--------------------------------<br><br>Ticket: {ticket_prefix}{ticket_number}<br>Subject: {ticket_subject}<br>Status: {ticket_status}<br>Portal: <a href='{ticket_url}'>View ticket</a>{sla_notice}<br><br>--<br>{company_name} - Support<br>{from_email}<br>{company_phone}",
+            'body' => "<div style='background-color:#FDEEEB;border:1px solid #F5CFC8;border-radius:8px;padding:10px 14px;color:#8F2415;font-size:13px;font-style:italic;margin-bottom:20px;'>Please type your reply above this line</div>Hello {contact_name},<br><br>A ticket regarding \"{ticket_subject}\" has been created for you.<br><br><hr style='border:none;border-top:1px solid #E4E7EC;margin:16px 0;'><br>{ticket_details}<hr style='border:none;border-top:1px solid #E4E7EC;margin:16px 0;'><br><br>Ticket: {ticket_prefix}{ticket_number}<br>Subject: {ticket_subject}<br>Status: {ticket_status}<br>Portal: <a href='{ticket_url}'>View ticket</a>{sla_notice}<br><br>--<br>{company_name} - Support<br>{from_email}<br>{company_phone}",
             'tokens' => 'contact_name, ticket_subject, ticket_details, ticket_prefix, ticket_number, ticket_status, ticket_url, sla_notice, company_name, company_phone, from_email',
         ],
         'ticket_created_scheduled' => [
             'name' => 'Ticket Created (recurring ticket run)',
             'subject' => 'Ticket Created - [{ticket_prefix}{ticket_number}] - {ticket_subject} (scheduled)',
-            'body' => "<i style='color: #808080'>##- Please type your reply above this line -##</i><br><br>Hello {contact_name},<br><br>A ticket regarding \"{ticket_subject}\" has been automatically created for you.<br><br>--------------------------------<br>{ticket_details}--------------------------------<br><br>Ticket: {ticket_prefix}{ticket_number}<br>Subject: {ticket_subject}<br>Status: Open<br>Portal: {ticket_url}{sla_notice}<br><br>--<br>{company_name} - Support<br>{from_email}<br>{company_phone}",
+            'body' => "<div style='background-color:#FDEEEB;border:1px solid #F5CFC8;border-radius:8px;padding:10px 14px;color:#8F2415;font-size:13px;font-style:italic;margin-bottom:20px;'>Please type your reply above this line</div>Hello {contact_name},<br><br>A ticket regarding \"{ticket_subject}\" has been automatically created for you.<br><br><hr style='border:none;border-top:1px solid #E4E7EC;margin:16px 0;'><br>{ticket_details}<hr style='border:none;border-top:1px solid #E4E7EC;margin:16px 0;'><br><br>Ticket: {ticket_prefix}{ticket_number}<br>Subject: {ticket_subject}<br>Status: Open<br>Portal: {ticket_url}{sla_notice}<br><br>--<br>{company_name} - Support<br>{from_email}<br>{company_phone}",
             'tokens' => 'contact_name, ticket_subject, ticket_details, ticket_prefix, ticket_number, ticket_url, sla_notice, company_name, company_phone, from_email',
         ],
         'ticket_created_via_email' => [
             'name' => 'Ticket Created (from inbound email)',
             'subject' => 'Ticket created - [{ticket_prefix}{ticket_number}] - {ticket_subject}',
-            'body' => "<i style='color: #808080'>##- Please type your reply above this line -##</i><br><br>Hello {contact_name},<br><br>Thank you for your email. A ticket regarding \"{ticket_subject}\" has been automatically created for you.<br><br>Ticket: {ticket_prefix}{ticket_number}<br>Subject: {ticket_subject}<br>Status: New<br>Portal: <a href='{ticket_url}'>View ticket</a>{sla_notice}<br><br>--<br>{company_name} - Support<br>{from_email}<br>{company_phone}",
+            'body' => "<div style='background-color:#FDEEEB;border:1px solid #F5CFC8;border-radius:8px;padding:10px 14px;color:#8F2415;font-size:13px;font-style:italic;margin-bottom:20px;'>Please type your reply above this line</div>Hello {contact_name},<br><br>Thank you for your email. A ticket regarding \"{ticket_subject}\" has been automatically created for you.<br><br>Ticket: {ticket_prefix}{ticket_number}<br>Subject: {ticket_subject}<br>Status: New<br>Portal: <a href='{ticket_url}'>View ticket</a>{sla_notice}<br><br>--<br>{company_name} - Support<br>{from_email}<br>{company_phone}",
             'tokens' => 'contact_name, ticket_subject, ticket_prefix, ticket_number, ticket_url, sla_notice, company_name, company_phone, from_email',
         ],
         'ticket_notification_watcher_added' => [
             'name' => 'Ticket - Watcher Added Notification',
             'subject' => 'Ticket Notification - [{ticket_prefix}{ticket_number}] - {ticket_subject}',
-            'body' => "<i style='color: #808080'>##- Please type your reply above this line -##</i><br><br>Hello,<br><br>You have been added as a collaborator on this ticket regarding \"{ticket_subject}\".<br><br>--------------------------------<br>{ticket_details}--------------------------------<br><br>Ticket: {ticket_prefix}{ticket_number}<br>Subject: {ticket_subject}<br>Status: {ticket_status}<br>Guest link: {ticket_url}<br><br>--<br>{company_name} - Support<br>{from_email}<br>{company_phone}",
+            'body' => "<div style='background-color:#FDEEEB;border:1px solid #F5CFC8;border-radius:8px;padding:10px 14px;color:#8F2415;font-size:13px;font-style:italic;margin-bottom:20px;'>Please type your reply above this line</div>Hello,<br><br>You have been added as a collaborator on this ticket regarding \"{ticket_subject}\".<br><br><hr style='border:none;border-top:1px solid #E4E7EC;margin:16px 0;'><br>{ticket_details}<hr style='border:none;border-top:1px solid #E4E7EC;margin:16px 0;'><br><br>Ticket: {ticket_prefix}{ticket_number}<br>Subject: {ticket_subject}<br>Status: {ticket_status}<br>Guest link: {ticket_url}<br><br>--<br>{company_name} - Support<br>{from_email}<br>{company_phone}",
             'tokens' => 'ticket_subject, ticket_details, ticket_prefix, ticket_number, ticket_status, ticket_url, company_name, company_phone, from_email',
         ],
         'ticket_assigned_single' => [
@@ -63,19 +63,19 @@ function emailTemplateDefaults() {
         'ticket_resolved_pending_closure' => [
             'name' => 'Ticket Resolved - Pending Closure',
             'subject' => 'Ticket resolved - [{ticket_prefix}{ticket_number}] - {ticket_subject} | (pending closure)',
-            'body' => "<i style='color: #808080'>##- Please type your reply above this line -##</i><br><br>Hello {contact_name},<br><br>Your ticket regarding {ticket_subject} has been marked as solved and is pending closure.<br><br>--------------------------------<br>{ticket_reply}<br>--------------------------------<br><br>If your request/issue is resolved, you can simply ignore this email. If you need further assistance, please reply or <a href='{ticket_reopen_url}'>re-open</a> to let us know! <br><br>Ticket: {ticket_prefix}{ticket_number}<br>Subject: {ticket_subject}<br>Status: {ticket_status}<br>Portal: <a href='{ticket_url}'>View ticket</a><br><br>--<br>{company_name} - Support<br>{from_email}<br>{company_phone}",
+            'body' => "<div style='background-color:#FDEEEB;border:1px solid #F5CFC8;border-radius:8px;padding:10px 14px;color:#8F2415;font-size:13px;font-style:italic;margin-bottom:20px;'>Please type your reply above this line</div>Hello {contact_name},<br><br>Your ticket regarding {ticket_subject} has been marked as solved and is pending closure.<br><br><hr style='border:none;border-top:1px solid #E4E7EC;margin:16px 0;'><br>{ticket_reply}<br><hr style='border:none;border-top:1px solid #E4E7EC;margin:16px 0;'><br><br>If your request/issue is resolved, you can simply ignore this email. If you need further assistance, please reply or <a href='{ticket_reopen_url}'>re-open</a> to let us know! <br><br>Ticket: {ticket_prefix}{ticket_number}<br>Subject: {ticket_subject}<br>Status: {ticket_status}<br>Portal: <a href='{ticket_url}'>View ticket</a><br><br>--<br>{company_name} - Support<br>{from_email}<br>{company_phone}",
             'tokens' => 'contact_name, ticket_subject, ticket_reply, ticket_prefix, ticket_number, ticket_status, ticket_reopen_url, ticket_url, company_name, company_phone, from_email',
         ],
         'ticket_resolved_pending_closure_task' => [
             'name' => 'Ticket Resolved - Pending Closure (task completion)',
             'subject' => 'Ticket resolved - [{ticket_prefix}{ticket_number}] - {ticket_subject} | (pending closure)',
-            'body' => "<i style='color: #808080'>##- Please type your reply above this line -##</i><br><br>Hello {contact_name},<br><br>Your ticket regarding \"{ticket_subject}\" has been marked as solved and is pending closure.<br><br>{details}<br><br> If your request/issue is resolved, you can simply ignore this email. If you need further assistance, please reply or <a href='{ticket_reopen_url}'>re-open</a> to let us know! <br><br>Ticket: {ticket_prefix}{ticket_number}<br>Subject: {ticket_subject}<br>Portal: {ticket_portal_url}<br><br>--<br>{company_name} - Support<br>{from_email}<br>{company_phone}",
+            'body' => "<div style='background-color:#FDEEEB;border:1px solid #F5CFC8;border-radius:8px;padding:10px 14px;color:#8F2415;font-size:13px;font-style:italic;margin-bottom:20px;'>Please type your reply above this line</div>Hello {contact_name},<br><br>Your ticket regarding \"{ticket_subject}\" has been marked as solved and is pending closure.<br><br>{details}<br><br> If your request/issue is resolved, you can simply ignore this email. If you need further assistance, please reply or <a href='{ticket_reopen_url}'>re-open</a> to let us know! <br><br>Ticket: {ticket_prefix}{ticket_number}<br>Subject: {ticket_subject}<br>Portal: {ticket_portal_url}<br><br>--<br>{company_name} - Support<br>{from_email}<br>{company_phone}",
             'tokens' => 'contact_name, ticket_subject, details, ticket_prefix, ticket_number, ticket_reopen_url, ticket_portal_url, company_name, company_phone, from_email',
         ],
         'ticket_update' => [
             'name' => 'Ticket Update (public reply)',
             'subject' => 'Ticket update - [{ticket_prefix}{ticket_number}] - {ticket_subject}',
-            'body' => "<i style='color: #808080'>##- Please type your reply above this line -##</i><br><br>Hello {contact_name},<br><br>Your ticket regarding {ticket_subject} has been updated.<br><br>--------------------------------<br>{ticket_reply}<br>--------------------------------<br><br>Ticket: {ticket_prefix}{ticket_number}<br>Subject: {ticket_subject}<br>Status: {ticket_status_name}<br>Portal: <a href='{ticket_url}'>View ticket</a><br><br>--<br>{company_name} - Support<br>{from_email}<br>{company_phone}",
+            'body' => "<div style='background-color:#FDEEEB;border:1px solid #F5CFC8;border-radius:8px;padding:10px 14px;color:#8F2415;font-size:13px;font-style:italic;margin-bottom:20px;'>Please type your reply above this line</div>Hello {contact_name},<br><br>Your ticket regarding {ticket_subject} has been updated.<br><br><hr style='border:none;border-top:1px solid #E4E7EC;margin:16px 0;'><br>{ticket_reply}<br><hr style='border:none;border-top:1px solid #E4E7EC;margin:16px 0;'><br><br>Ticket: {ticket_prefix}{ticket_number}<br>Subject: {ticket_subject}<br>Status: {ticket_status_name}<br>Portal: <a href='{ticket_url}'>View ticket</a><br><br>--<br>{company_name} - Support<br>{from_email}<br>{company_phone}",
             'tokens' => 'contact_name, ticket_subject, ticket_reply, ticket_prefix, ticket_number, ticket_status_name, ticket_url, company_name, company_phone, from_email',
         ],
         'ticket_closed' => [
@@ -87,7 +87,7 @@ function emailTemplateDefaults() {
         'ticket_scheduled_agent' => [
             'name' => 'Ticket Scheduled - Agent Notification',
             'subject' => 'Ticket Scheduled - [{ticket_prefix}{ticket_number}] - {ticket_subject}',
-            'body' => "Hello, {user_name}<br><br>The ticket regarding {ticket_subject} has been scheduled for {schedule_datetime}.<br><br>--------------------------------<br><a href=\"{ticket_url}\">{ticket_link}</a><br>--------------------------------<br><br>Please do not reply to this email. <br><br>Ticket: {ticket_prefix}{ticket_number}<br>Subject: {ticket_subject}<br>Portal: {ticket_url}<br><br>~<br>{company_name}<br>Support Department<br>{from_email}",
+            'body' => "Hello, {user_name}<br><br>The ticket regarding {ticket_subject} has been scheduled for {schedule_datetime}.<br><br><hr style='border:none;border-top:1px solid #E4E7EC;margin:16px 0;'><br><a href=\"{ticket_url}\">{ticket_link}</a><br><hr style='border:none;border-top:1px solid #E4E7EC;margin:16px 0;'><br><br>Please do not reply to this email. <br><br>Ticket: {ticket_prefix}{ticket_number}<br>Subject: {ticket_subject}<br>Portal: {ticket_url}<br><br>~<br>{company_name}<br>Support Department<br>{from_email}",
             'tokens' => 'user_name, ticket_subject, schedule_datetime, ticket_url, ticket_link, ticket_prefix, ticket_number, company_name, from_email',
         ],
         'ticket_scheduled_contact' => [
@@ -105,7 +105,7 @@ function emailTemplateDefaults() {
         'ticket_schedule_cancelled_agent' => [
             'name' => 'Ticket Schedule Cancelled - Agent Notification',
             'subject' => 'Ticket Schedule Cancelled - [{ticket_prefix}{ticket_number}] - {ticket_subject}',
-            'body' => "Hello, {user_name}<br><br>Scheduled work for the ticket regarding {ticket_subject} has been cancelled.<br><br>--------------------------------<br><a href=\"{ticket_url}\">{ticket_link}</a><br>--------------------------------<br><br>Please do not reply to this email. <br><br>Ticket: {ticket_prefix}{ticket_number}<br>Subject: {ticket_subject}<br>Portal: {ticket_portal_url}<br><br>~<br>{company_name}<br>Support Department<br>{from_email}",
+            'body' => "Hello, {user_name}<br><br>Scheduled work for the ticket regarding {ticket_subject} has been cancelled.<br><br><hr style='border:none;border-top:1px solid #E4E7EC;margin:16px 0;'><br><a href=\"{ticket_url}\">{ticket_link}</a><br><hr style='border:none;border-top:1px solid #E4E7EC;margin:16px 0;'><br><br>Please do not reply to this email. <br><br>Ticket: {ticket_prefix}{ticket_number}<br>Subject: {ticket_subject}<br>Portal: {ticket_portal_url}<br><br>~<br>{company_name}<br>Support Department<br>{from_email}",
             'tokens' => 'user_name, ticket_subject, ticket_url, ticket_link, ticket_prefix, ticket_number, ticket_portal_url, company_name, from_email',
         ],
         'ticket_schedule_cancelled_contact' => [
@@ -123,7 +123,7 @@ function emailTemplateDefaults() {
         'ticket_task_approval' => [
             'name' => 'Ticket Task Approval Required',
             'subject' => 'Ticket task approval required - [{ticket_prefix}{ticket_number}] - {ticket_subject}',
-            'body' => "<i style='color: #808080'>##- Please type your reply above this line -##</i><br><br>Hello,<br><br>A ticket regarding {ticket_subject} has a task requiring your approval:- <br>Task name: {task_name}<br>Scope/Type: {scope} - {type} <br><br>To approve this task, please click <a href='{approval_url}'>here</a>.<br>If you require further information, please reply to this e-mail.<br><br>Ticket: {ticket_prefix}{ticket_number}<br>Subject: {ticket_subject}<br>Status: {ticket_status}<br>Portal: <a href='{ticket_url}'>View ticket</a><br><br>--<br>{company_name} - Support<br>{from_email}<br>{company_phone}",
+            'body' => "<div style='background-color:#FDEEEB;border:1px solid #F5CFC8;border-radius:8px;padding:10px 14px;color:#8F2415;font-size:13px;font-style:italic;margin-bottom:20px;'>Please type your reply above this line</div>Hello,<br><br>A ticket regarding {ticket_subject} has a task requiring your approval:- <br>Task name: {task_name}<br>Scope/Type: {scope} - {type} <br><br>To approve this task, please click <a href='{approval_url}'>here</a>.<br>If you require further information, please reply to this e-mail.<br><br>Ticket: {ticket_prefix}{ticket_number}<br>Subject: {ticket_subject}<br>Status: {ticket_status}<br>Portal: <a href='{ticket_url}'>View ticket</a><br><br>--<br>{company_name} - Support<br>{from_email}<br>{company_phone}",
             'tokens' => 'ticket_subject, task_name, scope, type, approval_url, ticket_prefix, ticket_number, ticket_status, ticket_url, company_name, company_phone, from_email',
         ],
         'ticket_reopen_blocked' => [
@@ -141,13 +141,13 @@ function emailTemplateDefaults() {
         'new_ticket_notification_internal' => [
             'name' => 'New Ticket - Internal Notification',
             'subject' => '{app_name} - New Ticket - {client_name}: {ticket_subject}',
-            'body' => "Hello, <br><br>This is a notification that a new ticket has been raised in {app_name}. <br>Client: {client_name}<br>Priority: {priority}<br>Link: {ticket_url} <br><br>--------------------------------<br><br><b>{ticket_subject}</b><br>{ticket_details}",
+            'body' => "Hello, <br><br>This is a notification that a new ticket has been raised in {app_name}. <br>Client: {client_name}<br>Priority: {priority}<br>Link: {ticket_url} <br><br><hr style='border:none;border-top:1px solid #E4E7EC;margin:16px 0;'><br><br><b>{ticket_subject}</b><br>{ticket_details}",
             'tokens' => 'app_name, client_name, ticket_subject, priority, ticket_url, ticket_details',
         ],
         'new_recurring_ticket_notification_internal' => [
             'name' => 'New Recurring Ticket - Internal Notification',
             'subject' => '{app_name} - New Recurring Ticket - {client_name}: {ticket_subject}',
-            'body' => "Hello, <br><br>This is a notification that a recurring (scheduled) ticket has been raised in {app_name}. <br>Ticket: {ticket_prefix}{ticket_number}<br>Client: {client_name}<br>Priority: {priority}<br>Link: {ticket_url} <br><br>--------------------------------<br><br><b>{ticket_subject}</b><br>{ticket_details}",
+            'body' => "Hello, <br><br>This is a notification that a recurring (scheduled) ticket has been raised in {app_name}. <br>Ticket: {ticket_prefix}{ticket_number}<br>Client: {client_name}<br>Priority: {priority}<br>Link: {ticket_url} <br><br><hr style='border:none;border-top:1px solid #E4E7EC;margin:16px 0;'><br><br><b>{ticket_subject}</b><br>{ticket_details}",
             'tokens' => 'app_name, ticket_prefix, ticket_number, client_name, ticket_subject, priority, ticket_url, ticket_details',
         ],
         'ticket_sla_alert' => [
@@ -314,6 +314,72 @@ function emailTemplateDefaults() {
 }
 
 /**
+ * Wrap a rendered template body in the branded HTML email shell (header bar,
+ * card, footer) shared by every outbound email. Table-based / inline-styled
+ * for email client compatibility; the handful of classes referenced by older
+ * template bodies (.header, .footer, .link-button, .no-reply) are defined in
+ * the <style> block below so those bodies don't need editing.
+ */
+function wrapEmailHtml($body) {
+    global $mysqli, $config_base_url, $config_app_name;
+    static $company = null;
+
+    if ($company === null) {
+        $result = mysqli_query($mysqli, "SELECT company_name, company_logo FROM companies WHERE company_id = 1 LIMIT 1");
+        $row = $result ? mysqli_fetch_assoc($result) : [];
+        $company = [
+            'name' => $row['company_name'] ?? $config_app_name,
+            'logo' => $row['company_logo'] ?? '',
+        ];
+    }
+
+    $company_name = escapeHtml($company['name']);
+
+    if (!empty($company['logo'])) {
+        $logo_url = 'https://' . $config_base_url . '/uploads/settings/' . rawurlencode($company['logo']);
+        $brand_html = "<img src=\"$logo_url\" alt=\"$company_name\" height=\"36\" style=\"height:36px;max-height:36px;width:auto;display:block;border:0;\">";
+    } else {
+        $brand_html = "<span style=\"font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:18px;font-weight:700;letter-spacing:-0.02em;color:#ffffff;\">$company_name</span>";
+    }
+
+    $year = date('Y');
+
+    return <<<HTML
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+    a { color: #B3311F; }
+    .header { font-size: 16px; font-weight: 700; color: #0B1B2B; margin-bottom: 12px; }
+    .footer { margin-top: 20px; padding-top: 16px; border-top: 1px solid #E4E7EC; color: #8A99AB; font-size: 12px; }
+    .no-reply { margin-top: 8px; color: #8A99AB; font-size: 11px; font-style: italic; }
+    .link-button { display: inline-block; padding: 10px 22px; background-color: #D2402F; color: #ffffff !important; text-decoration: none; border-radius: 999px; font-weight: 600; font-size: 14px; }
+    code { background-color: #F6F7F9; border: 1px solid #E4E7EC; border-radius: 4px; padding: 2px 6px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+</style>
+</head>
+<body style="margin:0;padding:0;background-color:#F6F7F9;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#F6F7F9;">
+<tr><td align="center" style="padding:32px 16px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:#ffffff;border:1px solid #E4E7EC;border-radius:8px;">
+<tr><td style="height:4px;line-height:4px;font-size:0;background-color:#D2402F;border-radius:8px 8px 0 0;">&nbsp;</td></tr>
+<tr><td style="background-color:#0B1B2B;padding:20px 32px;border-radius:0;">$brand_html</td></tr>
+<tr><td style="padding:32px;color:#3F5266;font-size:15px;line-height:1.65;">
+$body
+</td></tr>
+<tr><td style="padding:16px 32px 24px;background-color:#F6F7F9;border-top:1px solid #E4E7EC;color:#8A99AB;font-size:12px;border-radius:0 0 8px 8px;">
+&copy; $year $company_name
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>
+HTML;
+}
+
+/**
  * Fetch a template (admin override merged over the built-in default) by key.
  * Cached per-request since the same key is often rendered for several
  * recipients (contact + watchers) in one request.
@@ -355,6 +421,6 @@ function renderEmailTemplate($key, $vars = []) {
 
     return [
         'subject' => strtr($template['subject'], $replacements),
-        'body' => strtr($template['body'], $replacements),
+        'body' => wrapEmailHtml(strtr($template['body'], $replacements)),
     ];
 }
