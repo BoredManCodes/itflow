@@ -499,8 +499,21 @@ if (isset($_GET['force_recurring'])) {
 
         // Email to client
 
-        $subject = "Invoice $invoice_prefix$invoice_number";
-        $body = "Hello $contact_name,<br><br>An invoice regarding \"$invoice_scope\" has been generated. Please view the details below.<br><br>Invoice: $invoice_prefix$invoice_number<br>Issue Date: $invoice_date<br>Total: $$invoice_amount<br>Due Date: $invoice_due<br><br><br>To view your invoice, please click <a href=\'https://$config_base_url/guest/guest_view_invoice.php?invoice_id=$new_invoice_id&url_key=$invoice_url_key\'>here</a>.<br><br><br>--<br>$company_name - Billing<br>$company_phone";
+        $rendered = renderEmailTemplate('invoice_created', [
+            'contact_name' => $contact_name,
+            'invoice_scope' => $invoice_scope,
+            'invoice_prefix' => $invoice_prefix,
+            'invoice_number' => $invoice_number,
+            'invoice_date' => $invoice_date,
+            'invoice_total' => '$' . $invoice_amount,
+            'invoice_due' => $invoice_due,
+            'invoice_url' => "https://$config_base_url/guest/guest_view_invoice.php?invoice_id=$new_invoice_id&url_key=$invoice_url_key",
+            'company_name' => $company_name,
+            'company_phone' => $company_phone,
+            'from_email' => $config_invoice_from_email,
+        ]);
+        $subject = $rendered['subject'];
+        $body = $rendered['body'];
 
 
         $data = [

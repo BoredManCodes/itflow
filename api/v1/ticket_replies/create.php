@@ -145,8 +145,20 @@ if (!empty($ticket_id) && !empty($reply)) {
                 $company_name = escapeSql($company_row['company_name']);
                 $company_phone = escapeSql(formatPhoneNumber($company_row['company_phone'], $company_row['company_phone_country_code']));
 
-                $subject = "Ticket update - [$ticket_prefix$ticket_number] - $ticket_subject";
-                $body = "<i style=\'color: #808080\'>##- Please type your reply above this line -##</i><br><br>Hello $contact_name,<br><br>Your ticket regarding $ticket_subject has been updated.<br><br>--------------------------------<br>$reply<br>--------------------------------<br><br>Ticket: $ticket_prefix$ticket_number<br>Subject: $ticket_subject<br>Status: $ticket_status_name<br>Portal: <a href=\'https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$ticket_url_key\'>View ticket</a><br><br>--<br>$company_name - Support<br>$from_email<br>$company_phone";
+                $rendered = renderEmailTemplate('ticket_update', [
+                    'contact_name' => $contact_name,
+                    'ticket_subject' => $ticket_subject,
+                    'ticket_reply' => $reply,
+                    'ticket_prefix' => $ticket_prefix,
+                    'ticket_number' => $ticket_number,
+                    'ticket_status_name' => $ticket_status_name,
+                    'ticket_url' => "https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$ticket_url_key",
+                    'company_name' => $company_name,
+                    'company_phone' => $company_phone,
+                    'from_email' => $from_email,
+                ]);
+                $subject = $rendered['subject'];
+                $body = $rendered['body'];
 
                 $data = [];
 

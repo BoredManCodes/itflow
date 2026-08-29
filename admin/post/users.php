@@ -76,8 +76,17 @@ if (isset($_POST['add_user'])) {
             $login_url .= "?key=$config_login_key_secret";
         }
 
-        $subject = "Your new $company_name ITFlow account";
-        $body = "Hello $name,<br><br>An ITFlow account has been setup for you. Please change your password upon login. <br><br>Username: $email <br>Password: $password<br>Login URL: $login_url<br><br>--<br>$company_name - Support<br>$config_ticket_from_email";
+        $rendered = renderEmailTemplate('new_user_account', [
+            'name' => $name,
+            'app_name' => $config_app_name,
+            'company_name' => $company_name,
+            'email' => $email,
+            'password' => $password,
+            'login_url' => $login_url,
+            'from_email' => $config_ticket_from_email,
+        ]);
+        $subject = $rendered['subject'];
+        $body = $rendered['body'];
 
         $data = [
             [

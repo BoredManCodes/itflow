@@ -447,10 +447,22 @@ if (mysqli_num_rows($sql_recurring_tickets) > 0) {
         // Notify client by email their ticket has been raised, if general notifications are turned on & there is a valid contact email
         if (!empty($config_smtp_provider) && $config_ticket_client_general_notifications == 1 && filter_var($contact_email, FILTER_VALIDATE_EMAIL)) {
 
-            $email_subject = "Ticket created - [$ticket_prefix$ticket_number] - $ticket_subject (scheduled)";
             // SLA response commitment for this client + priority, empty when no SLA applies
             $sla_notice = escapeSql(getTicketSlaEmailNotice($id, $company_phone));
-            $email_body = "<i style=\'color: #808080\'>##- Please type your reply above this line -##</i><br><br>Hello $contact_name,<br><br>A ticket regarding \"$ticket_subject\" has been automatically created for you.<br><br>--------------------------------<br>$ticket_details--------------------------------<br><br>Ticket: $ticket_prefix$ticket_number<br>Subject: $ticket_subject<br>Status: Open<br>Portal: https://$config_base_url/client/ticket.php?id=$id$sla_notice<br><br>--<br>$company_name - Support<br>$config_ticket_from_email<br>$company_phone";
+            $rendered = renderEmailTemplate('ticket_created_scheduled', [
+                'contact_name' => $contact_name,
+                'ticket_subject' => $ticket_subject,
+                'ticket_details' => $ticket_details,
+                'ticket_prefix' => $ticket_prefix,
+                'ticket_number' => $ticket_number,
+                'ticket_url' => "https://$config_base_url/client/ticket.php?id=$id",
+                'sla_notice' => $sla_notice,
+                'company_name' => $company_name,
+                'company_phone' => $company_phone,
+                'from_email' => $config_ticket_from_email,
+            ]);
+            $email_subject = $rendered['subject'];
+            $email_body = $rendered['body'];
 
             $email = [
                     'from' => $config_ticket_from_email,
@@ -468,8 +480,18 @@ if (mysqli_num_rows($sql_recurring_tickets) > 0) {
         // Notify agent's via the DL address of the new ticket, if it's populated with a valid email
         if (filter_var($config_ticket_new_ticket_notification_email, FILTER_VALIDATE_EMAIL)) {
 
-            $email_subject = "ITFlow - New Recurring Ticket - $client_name: $ticket_subject";
-            $email_body = "Hello, <br><br>This is a notification that a recurring (scheduled) ticket has been raised in ITFlow. <br>Ticket: $ticket_prefix$ticket_number<br>Client: $client_name<br>Priority: $priority<br>Link: https://$config_base_url/agent/ticket.php?ticket_id=$id$client_uri <br><br>--------------------------------<br><br><b>$ticket_subject</b><br>$ticket_details";
+            $rendered = renderEmailTemplate('new_recurring_ticket_notification_internal', [
+                'app_name' => $config_app_name,
+                'ticket_prefix' => $ticket_prefix,
+                'ticket_number' => $ticket_number,
+                'client_name' => $client_name,
+                'ticket_subject' => $ticket_subject,
+                'priority' => $priority,
+                'ticket_url' => "https://$config_base_url/agent/ticket.php?ticket_id=$id$client_uri",
+                'ticket_details' => $ticket_details,
+            ]);
+            $email_subject = $rendered['subject'];
+            $email_body = $rendered['body'];
 
             $email = [
                     'from' => $config_ticket_from_email,
@@ -642,14 +664,27 @@ if ($config_send_invoice_reminders == 1) {
                 continue;
             }
 
-            $subject = "Overdue Invoice $invoice_prefix$invoice_number";
-
             // Only show the paid line if a payment has actually been applied
             $paid_line = $amount_paid > 0 ? "Amount Paid: " . numfmt_format_currency($currency_format, $amount_paid, $invoice_currency_code) . "<br>" : "";
 
-            $body = "Hello $contact_name,<br><br>Our records indicate that we have not yet received payment in full for the invoice $invoice_prefix$invoice_number. We kindly request that you submit your payment as soon as possible. If you have any questions or concerns, please do not hesitate to contact us at $company_email or $company_phone.
-                <br>
-                Kindly review the invoice details mentioned below.<br><br>Invoice: $invoice_prefix$invoice_number<br>Issue Date: $invoice_date<br>Invoice Total: " . numfmt_format_currency($currency_format, $invoice_amount, $invoice_currency_code) . "<br>$paid_line" . "Balance Due: " . numfmt_format_currency($currency_format, $invoice_balance, $invoice_currency_code) . "<br>Due Date: $invoice_due<br>Over Due By: $day Days<br><br><br>To view your invoice, please click <a href=\'https://$config_base_url/guest/guest_view_invoice.php?invoice_id=$invoice_id&url_key=$invoice_url_key\'>here</a>.<br><br><br>--<br>$company_name - Billing<br>$config_invoice_from_email<br>$company_phone";
+            $rendered = renderEmailTemplate('invoice_overdue', [
+                'contact_name' => $contact_name,
+                'invoice_prefix' => $invoice_prefix,
+                'invoice_number' => $invoice_number,
+                'company_email' => $company_email,
+                'company_phone' => $company_phone,
+                'invoice_date' => $invoice_date,
+                'invoice_total' => numfmt_format_currency($currency_format, $invoice_amount, $invoice_currency_code),
+                'paid_line' => $paid_line,
+                'invoice_balance' => numfmt_format_currency($currency_format, $invoice_balance, $invoice_currency_code),
+                'invoice_due' => $invoice_due,
+                'days_overdue' => $day,
+                'invoice_url' => "https://$config_base_url/guest/guest_view_invoice.php?invoice_id=$invoice_id&url_key=$invoice_url_key",
+                'company_name' => $company_name,
+                'from_email' => $config_invoice_from_email,
+            ]);
+            $subject = $rendered['subject'];
+            $body = $rendered['body'];
 
             $mail = addToMailQueue([
                 [
@@ -792,8 +827,21 @@ while ($row = mysqli_fetch_assoc($sql_recurring_invoices)) {
 
     if ($config_recurring_auto_send_invoice == 1 && $recurring_invoice_email_notify == 1) {
 
-        $subject = "Invoice $invoice_prefix$invoice_number";
-        $body = "Hello $contact_name,<br><br>An invoice regarding \"$invoice_scope\" has been generated. Please view the details below.<br><br>Invoice: $invoice_prefix$invoice_number<br>Issue Date: $invoice_date<br>Total: " . numfmt_format_currency($currency_format, $invoice_amount, $recurring_invoice_currency_code) . "<br>Due Date: $invoice_due<br><br><br>To view your invoice, please click <a href=\'https://$config_base_url/guest/guest_view_invoice.php?invoice_id=$new_invoice_id&url_key=$invoice_url_key\'>here</a>.<br><br><br>--<br>$company_name - Billing<br>$config_invoice_from_email<br>$company_phone";
+        $rendered = renderEmailTemplate('invoice_created', [
+            'contact_name' => $contact_name,
+            'invoice_scope' => $invoice_scope,
+            'invoice_prefix' => $invoice_prefix,
+            'invoice_number' => $invoice_number,
+            'invoice_date' => $invoice_date,
+            'invoice_total' => numfmt_format_currency($currency_format, $invoice_amount, $recurring_invoice_currency_code),
+            'invoice_due' => $invoice_due,
+            'invoice_url' => "https://$config_base_url/guest/guest_view_invoice.php?invoice_id=$new_invoice_id&url_key=$invoice_url_key",
+            'company_name' => $company_name,
+            'company_phone' => $company_phone,
+            'from_email' => $config_invoice_from_email,
+        ]);
+        $subject = $rendered['subject'];
+        $body = $rendered['body'];
 
         $mail = addToMailQueue([
             [
@@ -984,8 +1032,18 @@ while ($row = mysqli_fetch_assoc($sql_recurring_payments)) {
 
                     // RECEIPT EMAIL
                     if (!empty($config_smtp_provider)) {
-                        $subject = "Payment Received - Invoice $invoice_prefix$invoice_number";
-                        $body = "Hello $contact_name<br><br>We have received online payment for the amount of " . numfmt_format_currency($currency_format, $invoice_amount, $recurring_payment_currency_code) . " for invoice <a href=\\'https://$config_base_url/guest/guest_view_invoice.php?invoice_id=$invoice_id&url_key=$invoice_url_key\\'>$invoice_prefix$invoice_number</a>. Please keep this email as a receipt for your records.<br><br>Amount Paid: " . numfmt_format_currency($currency_format, $invoice_amount, $recurring_payment_currency_code) . "<br><br>Thank you for your business!<br><br><br>--<br>$company_name - Billing Department<br>$config_invoice_from_email<br>$company_phone";
+                        $rendered = renderEmailTemplate('payment_received_online', [
+                            'contact_name' => $contact_name,
+                            'amount' => numfmt_format_currency($currency_format, $invoice_amount, $recurring_payment_currency_code),
+                            'invoice_url' => "https://$config_base_url/guest/guest_view_invoice.php?invoice_id=$invoice_id&url_key=$invoice_url_key",
+                            'invoice_prefix' => $invoice_prefix,
+                            'invoice_number' => $invoice_number,
+                            'company_name' => $company_name,
+                            'company_phone' => $company_phone,
+                            'from_email' => $config_invoice_from_email,
+                        ]);
+                        $subject = $rendered['subject'];
+                        $body = $rendered['body'];
 
                         $data = [[
                             'from' => $config_invoice_from_email,
@@ -998,8 +1056,15 @@ while ($row = mysqli_fetch_assoc($sql_recurring_payments)) {
 
                         // Internal notification
                         if (!empty($config_invoice_paid_notification_email)) {
-                            $subject_int = "Payment Received - $client_name - Invoice $invoice_prefix$invoice_number";
-                            $body_int = "This is a notification that an invoice has been paid in ITFlow. Below is a copy of the receipt sent to the client:-<br><br>--------<br><br>$body";
+                            $rendered_internal = renderEmailTemplate('payment_received_internal', [
+                                'app_name' => $config_app_name,
+                                'client_name' => $client_name,
+                                'invoice_prefix' => $invoice_prefix,
+                                'invoice_number' => $invoice_number,
+                                'client_receipt_body' => $body,
+                            ]);
+                            $subject_int = $rendered_internal['subject'];
+                            $body_int = $rendered_internal['body'];
                             $data[] = [
                                 'from' => $config_invoice_from_email,
                                 'from_name' => $config_invoice_from_name,
@@ -1433,17 +1498,19 @@ if (settingsColumnExists($mysqli, 'config_update_latest_commit')) {
         // last emailed about, so this only fires again once $latest_version changes.
         if (!empty($config_update_notification_email) && $latest_version !== $config_update_last_notified_version) {
 
+            $rendered = renderEmailTemplate('update_available_notification', [
+                'company_name' => $company_name,
+                'current_version' => escapeHtml(substr($current_version, 0, 7)),
+                'latest_version' => escapeHtml(substr($latest_version, 0, 7)),
+            ]);
             $data = [
                 [
                     'from' => $config_mail_from_email,
                     'from_name' => $config_mail_from_name,
                     'recipient' => $config_update_notification_email,
                     'recipient_name' => $config_update_notification_email,
-                    'subject' => "ITFlow update available",
-                    'body' => "A new ITFlow update is available for the $company_name install.<br><br>"
-                        . "Currently running: <code>" . escapeHtml(substr($current_version, 0, 7)) . "</code><br>"
-                        . "Latest available: <code>" . escapeHtml(substr($latest_version, 0, 7)) . "</code><br><br>"
-                        . "Review the <a href=\"https://github.com/itflow-org/itflow/blob/master/CHANGELOG.md\">changelog</a> and back up before updating, then apply it from Admin &gt; Update.",
+                    'subject' => $rendered['subject'],
+                    'body' => $rendered['body'],
                 ]
             ];
             addToMailQueue($data);

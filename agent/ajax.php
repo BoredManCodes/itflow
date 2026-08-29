@@ -330,14 +330,20 @@ if (isset($_GET['share_generate_link'])) {
     // Send user e-mail, if specified
     if(!empty($config_smtp_host) && filter_var($item_email, FILTER_VALIDATE_EMAIL)){
 
-        $subject = "Time sensitive - $company_name secure link enclosed";
-        if ($item_expires_friendly == "never") {
-            $subject = "$company_name secure link enclosed";
-        }
-        $body = "Hello,<br><br>$session_name from $company_name sent you a time sensitive secure link regarding \"$item_name\".<br><br>The link will expire in <strong>$item_expires_friendly</strong>$item_view_limit_wording.<br><br><strong><a href=\'$url\'>Click here to access your secure content</a></strong><br><br>--<br>$company_name - Support<br>$config_ticket_from_email<br>$company_phone";
-
-        // Add the intended recipient disclosure
-        $body .= "<br><br><em>This email and any attachments are confidential and intended for the specified recipient(s) only. If you are not the intended recipient, please notify the sender and delete this email. Unauthorized use, disclosure, or distribution is prohibited.</em>";
+        $subject_prefix = $item_expires_friendly == "never" ? "" : "Time sensitive - ";
+        $rendered = renderEmailTemplate('secure_link_share', [
+            'subject_prefix' => $subject_prefix,
+            'company_name' => $company_name,
+            'session_name' => $session_name,
+            'item_name' => $item_name,
+            'item_expires_friendly' => $item_expires_friendly,
+            'item_view_limit_wording' => $item_view_limit_wording,
+            'share_url' => $url,
+            'from_email' => $config_ticket_from_email,
+            'company_phone' => $company_phone,
+        ]);
+        $subject = $rendered['subject'];
+        $body = $rendered['body'];
 
         $data = [
             [
@@ -748,8 +754,21 @@ if (isset($_POST['update_kanban_ticket'])) {
                     $company_phone = escapeSql(formatPhoneNumber($row['company_phone'], $row['company_phone_country_code']));
 
                     // EMAIL
-                    $subject = "Ticket resolved - [$ticket_prefix$ticket_number] - $ticket_subject | (pending closure)";
-                    $body = "<i style=\'color: #808080\'>##- Please type your reply above this line -##</i><br><br>Hello $contact_name,<br><br>Your ticket regarding $ticket_subject has been marked as solved and is pending closure.<br><br>If your request/issue is resolved, you can simply ignore this email. If you need further assistance, please reply or <a href=\'https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key\'>re-open</a> to let us know! <br><br>Ticket: $ticket_prefix$ticket_number<br>Subject: $ticket_subject<br>Status: $ticket_status<br>Portal: <a href=\'https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key\'>View ticket</a><br><br>--<br>$company_name - Support<br>$config_ticket_from_email<br>$company_phone";
+                    $rendered = renderEmailTemplate('ticket_resolved_pending_closure', [
+                        'contact_name' => $contact_name,
+                        'ticket_subject' => $ticket_subject,
+                        'ticket_reply' => '',
+                        'ticket_reopen_url' => "https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key",
+                        'ticket_prefix' => $ticket_prefix,
+                        'ticket_number' => $ticket_number,
+                        'ticket_status' => $ticket_status,
+                        'ticket_url' => "https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key",
+                        'company_name' => $company_name,
+                        'company_phone' => $company_phone,
+                        'from_email' => $config_ticket_from_email,
+                    ]);
+                    $subject = $rendered['subject'];
+                    $body = $rendered['body'];
 
                     // Check email valid
                     if (filter_var($contact_email, FILTER_VALIDATE_EMAIL)) {

@@ -32,8 +32,14 @@ if (isset($_POST['edit_your_user_details'])) {
 
         $details = "Your email address was changed. New email: $email.";
 
-        $subject = "$config_app_name account update confirmation for $name";
-        $body = "Hi $name, <br><br>Your $config_app_name account has been updated, details below: <br><br> <b>$details</b> <br><br> If you did not perform this change, contact your $config_app_name administrator immediately. <br><br>Thanks, <br>ITFlow<br>$session_company_name";
+        $rendered = renderEmailTemplate('account_update_confirmation', [
+            'app_name' => $config_app_name,
+            'name' => $name,
+            'details' => $details,
+            'company_name' => $session_company_name,
+        ]);
+        $subject = $rendered['subject'];
+        $body = $rendered['body'];
 
         $data = [
             [
@@ -134,8 +140,14 @@ if (isset($_POST['edit_your_user_password'])) {
 
         $details = "Your password was changed.";
 
-        $subject = "$config_app_name account update confirmation for $name";
-        $body = "Hi $name, <br><br>Your $config_app_name account has been updated, details below: <br><br> <b>$details</b> <br><br> If you did not perform this change, contact your $config_app_name administrator immediately. <br><br>Thanks, <br>$config_app_name";
+        $rendered = renderEmailTemplate('account_update_confirmation', [
+            'app_name' => $config_app_name,
+            'name' => $name,
+            'details' => $details,
+            'company_name' => $config_app_name,
+        ]);
+        $subject = $rendered['subject'];
+        $body = $rendered['body'];
 
         $data = [
             [
@@ -282,8 +294,14 @@ if (isset($_GET['disable_mfa'])){
 
     // Email notification
     if (!empty($config_smtp_host)) {
-        $subject = "$config_app_name account update confirmation for $session_name";
-        $body = "Hi $session_name, <br><br>Your $config_app_name account has been updated, details below: <br><br> <b>2FA was disabled.</b> <br><br> If you did not perform this change, contact your $config_app_name administrator immediately. <br><br>Thanks, <br>ITFlow<br>$session_company_name";
+        $rendered = renderEmailTemplate('account_update_confirmation', [
+            'app_name' => $config_app_name,
+            'name' => $session_name,
+            'details' => '2FA was disabled.',
+            'company_name' => $session_company_name,
+        ]);
+        $subject = $rendered['subject'];
+        $body = $rendered['body'];
 
         $data = [
             [

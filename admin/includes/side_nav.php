@@ -116,9 +116,13 @@
                     </a>
                 </li>
 
-                <?php if ($config_module_enable_itdoc || $config_module_enable_ticketing) { ?>
-                    <li class="nav-header">TEMPLATES</li>
-                <?php } ?>
+                <li class="nav-header">TEMPLATES</li>
+                <li class="nav-item">
+                    <a href="/admin/email_templates.php" class="nav-link <?= (in_array(basename($_SERVER['PHP_SELF']), ['email_templates.php', 'email_template.php']) ? 'active' : '') ?>">
+                        <i class="nav-icon fas fa-envelope-open-text"></i>
+                        <p>Email Templates</p>
+                    </a>
+                </li>
                 <?php if ($config_module_enable_ticketing) { ?>
                     <li class="nav-item">
                         <a href="/admin/project_templates.php" class="nav-link <?= (in_array(basename($_SERVER['PHP_SELF']), ['project_templates.php', 'project_template.php']) ? 'active' : '') ?>">

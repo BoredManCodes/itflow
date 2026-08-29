@@ -216,8 +216,22 @@ if (isset($_POST['add_ticket_task_approver'])) {
     $company_phone = escapeSql(formatPhoneNumber($crow['company_phone'], $crow['company_phone_country_code']));
 
     // Email contents
-    $subject = "Ticket task approval required - [$ticket_prefix$ticket_number] - $ticket_subject";
-    $body = "<i style=\'color: #808080\'>##- Please type your reply above this line -##</i><br><br>Hello,<br><br>A ticket regarding $ticket_subject has a task requiring your approval:- <br>Task name: $task_name<br>Scope/Type: $scope - $type <br><br>To approve this task, please click <a href=\'https://$config_base_url/guest/guest_approve_ticket_task.php?task_approval_id=$approval_id&url_key=$approval_url_key\'>here</a>.<br>If you require further information, please reply to this e-mail.<br><br>Ticket: $ticket_prefix$ticket_number<br>Subject: $ticket_subject<br>Status: $ticket_status<br>Portal: <a href=\'https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$ticket_url_key\'>View ticket</a><br><br>--<br>$company_name - Support<br>$config_ticket_from_email<br>$company_phone";
+    $rendered = renderEmailTemplate('ticket_task_approval', [
+        'ticket_subject' => $ticket_subject,
+        'task_name' => $task_name,
+        'scope' => $scope,
+        'type' => $type,
+        'approval_url' => "https://$config_base_url/guest/guest_approve_ticket_task.php?task_approval_id=$approval_id&url_key=$approval_url_key",
+        'ticket_prefix' => $ticket_prefix,
+        'ticket_number' => $ticket_number,
+        'ticket_status' => $ticket_status,
+        'ticket_url' => "https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$ticket_url_key",
+        'company_name' => $company_name,
+        'company_phone' => $company_phone,
+        'from_email' => $config_ticket_from_email,
+    ]);
+    $subject = $rendered['subject'];
+    $body = $rendered['body'];
 
     if ($scope == 'internal' && $type == 'specific' && $session_user_id !== $required_user_id) {
         $notification_text = "$session_name needs your approval for ticket $ticket_prefix$ticket_number task $task_name";

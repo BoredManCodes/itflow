@@ -671,8 +671,6 @@ if (isset($_POST['email_quote'])) {
     $config_quote_from_email = escapeSql($config_quote_from_email);
     $config_base_url = escapeSql($config_base_url);
 
-    $subject = "Quote [$quote_scope]";
-
     // One queue row per selected contact, each greeting its own recipient
     $data = [];
     $recipient_labels = [];
@@ -681,7 +679,17 @@ if (isset($_POST['email_quote'])) {
         $contact_name = escapeSql($recipient['contact_name']);
         $contact_email = escapeSql($recipient['contact_email']);
 
-        $body = "Hello $contact_name,<br><br>Thank you for your inquiry, we are pleased to provide you with the following estimate.<br><br><br>$quote_scope<br>Total Cost: " . numfmt_format_currency($currency_format, $quote_amount, $quote_currency_code) . "<br><br><br>View and accept your estimate online <a href=\'https://$config_base_url/guest/guest_view_quote.php?quote_id=$quote_id&url_key=$quote_url_key\'>here</a><br><br><br>--<br>$company_name - Sales<br>$config_quote_from_email<br>$company_phone";
+        $rendered = renderEmailTemplate('quote_created', [
+            'contact_name' => $contact_name,
+            'quote_scope' => $quote_scope,
+            'quote_total' => numfmt_format_currency($currency_format, $quote_amount, $quote_currency_code),
+            'quote_url' => "https://$config_base_url/guest/guest_view_quote.php?quote_id=$quote_id&url_key=$quote_url_key",
+            'company_name' => $company_name,
+            'company_phone' => $company_phone,
+            'from_email' => $config_quote_from_email,
+        ]);
+        $subject = $rendered['subject'];
+        $body = $rendered['body'];
 
         $data[] = [
             'from' => $config_quote_from_email,

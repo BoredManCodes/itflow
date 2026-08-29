@@ -141,10 +141,23 @@ if (isset($_POST['add_ticket'])) {
 
         // EMAILING
 
-        $subject = "Ticket Created [$ticket_prefix$ticket_number] - $ticket_subject";
         // SLA response commitment for this client + priority, empty when no SLA applies
         $sla_notice = escapeSql(getTicketSlaEmailNotice($ticket_id, $company_phone));
-        $body = "<i style=\'color: #808080\'>##- Please type your reply above this line -##</i><br><br>Hello $contact_name,<br><br>A ticket regarding \"$ticket_subject\" has been created for you.<br><br>--------------------------------<br>$ticket_details--------------------------------<br><br>Ticket: $ticket_prefix$ticket_number<br>Subject: $ticket_subject<br>Status: Open<br>Portal: <a href=\'https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key\'>View ticket</a>$sla_notice<br><br>--<br>$company_name - Support<br>$config_ticket_from_email<br>$company_phone";
+        $rendered = renderEmailTemplate('ticket_created', [
+            'contact_name' => $contact_name,
+            'ticket_subject' => $ticket_subject,
+            'ticket_details' => $ticket_details,
+            'ticket_prefix' => $ticket_prefix,
+            'ticket_number' => $ticket_number,
+            'ticket_status' => 'Open',
+            'ticket_url' => "https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key",
+            'sla_notice' => $sla_notice,
+            'company_name' => $company_name,
+            'company_phone' => $company_phone,
+            'from_email' => $config_ticket_from_email,
+        ]);
+        $subject = $rendered['subject'];
+        $body = $rendered['body'];
 
         // Verify contact email is valid
         if (filter_var($contact_email, FILTER_VALIDATE_EMAIL)) {
@@ -394,10 +407,23 @@ if (isset($_POST['edit_ticket'])) {
         // Email content
         $data = []; // Queue array
 
-        $subject = "Ticket Created - [$ticket_prefix$ticket_number] - $ticket_subject";
         // SLA response commitment for this client + priority, empty when no SLA applies
         $sla_notice = escapeSql(getTicketSlaEmailNotice($ticket_id, $company_phone));
-        $body = "<i style=\'color: #808080\'>##- Please type your reply above this line -##</i><br><br>Hello $contact_name,<br><br>A ticket regarding \"$ticket_subject\" has been created for you.<br><br>--------------------------------<br>$ticket_details--------------------------------<br><br>Ticket: $ticket_prefix$ticket_number<br>Subject: $ticket_subject<br>Status: $ticket_status<br>Portal: <a href=\'https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key\'>View ticket</a>$sla_notice<br><br>--<br>$company_name - Support<br>$config_ticket_from_email<br>$company_phone";
+        $rendered = renderEmailTemplate('ticket_created', [
+            'contact_name' => $contact_name,
+            'ticket_subject' => $ticket_subject,
+            'ticket_details' => $ticket_details,
+            'ticket_prefix' => $ticket_prefix,
+            'ticket_number' => $ticket_number,
+            'ticket_status' => $ticket_status,
+            'ticket_url' => "https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key",
+            'sla_notice' => $sla_notice,
+            'company_name' => $company_name,
+            'company_phone' => $company_phone,
+            'from_email' => $config_ticket_from_email,
+        ]);
+        $subject = $rendered['subject'];
+        $body = $rendered['body'];
 
 
         // Only add contact to email queue if email is valid
@@ -592,10 +618,23 @@ if (isset($_POST['edit_ticket_contact'])) {
         // Email content
         $data = []; // Queue array
 
-        $subject = "Ticket Created - [$ticket_prefix$ticket_number] - $ticket_subject";
         // SLA response commitment for this client + priority, empty when no SLA applies
         $sla_notice = escapeSql(getTicketSlaEmailNotice($ticket_id, $company_phone));
-        $body = "<i style=\'color: #808080\'>##- Please type your reply above this line -##</i><br><br>Hello $contact_name,<br><br>A ticket regarding \"$ticket_subject\" has been created for you.<br><br>--------------------------------<br>$ticket_details--------------------------------<br><br>Ticket: $ticket_prefix$ticket_number<br>Subject: $ticket_subject<br>Status: $ticket_status<br>Portal: <a href=\'https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key\'>View ticket</a>$sla_notice<br><br>--<br>$company_name - Support<br>$config_ticket_from_email<br>$company_phone";
+        $rendered = renderEmailTemplate('ticket_created', [
+            'contact_name' => $contact_name,
+            'ticket_subject' => $ticket_subject,
+            'ticket_details' => $ticket_details,
+            'ticket_prefix' => $ticket_prefix,
+            'ticket_number' => $ticket_number,
+            'ticket_status' => $ticket_status,
+            'ticket_url' => "https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key",
+            'sla_notice' => $sla_notice,
+            'company_name' => $company_name,
+            'company_phone' => $company_phone,
+            'from_email' => $config_ticket_from_email,
+        ]);
+        $subject = $rendered['subject'];
+        $body = $rendered['body'];
 
         $data[] = [
             'from' => $config_ticket_from_email,
@@ -710,8 +749,19 @@ if (isset($_POST['add_ticket_watcher'])) {
                 // Email content
                 $data = []; // Queue array
 
-                $subject = "Ticket Notification - [$ticket_prefix$ticket_number] - $ticket_subject";
-                $body = "<i style=\'color: #808080\'>##- Please type your reply above this line -##</i><br><br>Hello,<br><br>You have been added as a collaborator on this ticket regarding \"$ticket_subject\".<br><br>--------------------------------<br>$ticket_details--------------------------------<br><br>Ticket: $ticket_prefix$ticket_number<br>Subject: $ticket_subject<br>Status: $ticket_status<br>Guest link: https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key<br><br>--<br>$company_name - Support<br>$config_ticket_from_email<br>$company_phone";
+                $rendered = renderEmailTemplate('ticket_notification_watcher_added', [
+                    'ticket_subject' => $ticket_subject,
+                    'ticket_details' => $ticket_details,
+                    'ticket_prefix' => $ticket_prefix,
+                    'ticket_number' => $ticket_number,
+                    'ticket_status' => $ticket_status,
+                    'ticket_url' => "https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key",
+                    'company_name' => $company_name,
+                    'company_phone' => $company_phone,
+                    'from_email' => $config_ticket_from_email,
+                ]);
+                $subject = $rendered['subject'];
+                $body = $rendered['body'];
 
                 $data[] = [
                     'from' => $config_ticket_from_email,
@@ -999,8 +1049,19 @@ if (isset($_POST['assign_ticket'])) {
             $config_ticket_from_email = escapeSql($config_ticket_from_email);
             $company_name = escapeSql($session_company_name);
 
-            $subject = "$config_app_name - Ticket $ticket_prefix$ticket_number assigned to you - $ticket_subject";
-            $body = "Hi $agent_name, <br><br>A ticket has been assigned to you!<br><br>Client: $client_name<br>Ticket Number: $ticket_prefix$ticket_number<br> Subject: $ticket_subject<br><br>https://$config_base_url/agent/ticket.php?ticket_id=$ticket_id$client_uri <br><br>Thanks, <br>$session_name<br>$company_name";
+            $rendered = renderEmailTemplate('ticket_assigned_single', [
+                'app_name' => $config_app_name,
+                'ticket_prefix' => $ticket_prefix,
+                'ticket_number' => $ticket_number,
+                'ticket_subject' => $ticket_subject,
+                'agent_name' => $agent_name,
+                'client_name' => $client_name,
+                'ticket_url' => "https://$config_base_url/agent/ticket.php?ticket_id=$ticket_id$client_uri",
+                'session_name' => $session_name,
+                'company_name' => $company_name,
+            ]);
+            $subject = $rendered['subject'];
+            $body = $rendered['body'];
 
             // Email Ticket Agent
             // Queue Mail
@@ -1216,8 +1277,16 @@ if (isset($_POST['bulk_assign_ticket'])) {
                 $config_ticket_from_email = escapeSql($config_ticket_from_email);
                 $company_name = escapeSql($session_company_name);
 
-                $subject = "$config_app_name - $ticket_count tickets have been assigned to you";
-                $body = "Hi $agent_name, <br><br>$session_name assigned $ticket_count tickets to you!<br><br>$tickets_assigned_body<br>Thanks, <br>$session_name<br>$company_name";
+                $rendered = renderEmailTemplate('ticket_assigned_bulk', [
+                    'app_name' => $config_app_name,
+                    'ticket_count' => $ticket_count,
+                    'agent_name' => $agent_name,
+                    'session_name' => $session_name,
+                    'tickets_list' => $tickets_assigned_body,
+                    'company_name' => $company_name,
+                ]);
+                $subject = $rendered['subject'];
+                $body = $rendered['body'];
 
                 // Email Ticket Agent
                 // Queue Mail
@@ -1519,8 +1588,20 @@ if (isset($_POST['bulk_resolve_tickets'])) {
                     $company_phone = escapeSql(formatPhoneNumber($row['company_phone'], $row['company_phone_country_code']));
 
                     // EMAIL
-                    $subject = "Ticket resolved - [$ticket_prefix$ticket_number] - $ticket_subject | (pending closure)";
-                    $body = "<i style=\'color: #808080\'>##- Please type your reply above this line -##</i><br><br>Hello $contact_name,<br><br>Your ticket regarding \"$ticket_subject\" has been marked as solved and is pending closure.<br><br>$details<br><br> If your request/issue is resolved, you can simply ignore this email. If you need further assistance, please reply or <a href=\'https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key\'>re-open</a> to let us know! <br><br>Ticket: $ticket_prefix$ticket_number<br>Subject: $ticket_subject<br>Portal: https://$base_url/client/ticket.php?id=$ticket_id<br><br>--<br>$company_name - Support<br>$config_ticket_from_email<br>$company_phone";
+                    $rendered = renderEmailTemplate('ticket_resolved_pending_closure_task', [
+                        'contact_name' => $contact_name,
+                        'ticket_subject' => $ticket_subject,
+                        'details' => $details,
+                        'ticket_reopen_url' => "https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key",
+                        'ticket_prefix' => $ticket_prefix,
+                        'ticket_number' => $ticket_number,
+                        'ticket_portal_url' => "https://$base_url/client/ticket.php?id=$ticket_id",
+                        'company_name' => $company_name,
+                        'company_phone' => $company_phone,
+                        'from_email' => $config_ticket_from_email,
+                    ]);
+                    $subject = $rendered['subject'];
+                    $body = $rendered['body'];
 
                     // Check email valid
                     if (filter_var($contact_email, FILTER_VALIDATE_EMAIL)) {
@@ -1697,8 +1778,20 @@ if (isset($_POST['bulk_ticket_reply'])) {
             // Send e-mail to client if public update & email is set up
             if ($private_note == 0 && (!empty($config_smtp_provider))) {
 
-                $subject = "Ticket update - [$ticket_prefix$ticket_number] - $ticket_subject";
-                $body = "<i style=\'color: #808080\'>##- Please type your reply above this line -##</i><br><br>Hello $contact_name,<br><br>Your ticket regarding $ticket_subject has been updated.<br><br>--------------------------------<br>$ticket_reply<br>--------------------------------<br><br>Ticket: $ticket_prefix$ticket_number<br>Subject: $ticket_subject<br>Status: $ticket_status_name<br>Portal: <a href=\'https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key\'>View ticket</a><br><br>--<br>$company_name - Support<br>$from_email<br>$company_phone";
+                $rendered = renderEmailTemplate('ticket_update', [
+                    'contact_name' => $contact_name,
+                    'ticket_subject' => $ticket_subject,
+                    'ticket_reply' => $ticket_reply,
+                    'ticket_prefix' => $ticket_prefix,
+                    'ticket_number' => $ticket_number,
+                    'ticket_status_name' => $ticket_status_name,
+                    'ticket_url' => "https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key",
+                    'company_name' => $company_name,
+                    'company_phone' => $company_phone,
+                    'from_email' => $from_email,
+                ]);
+                $subject = $rendered['subject'];
+                $body = $rendered['body'];
 
                 if (filter_var($contact_email, FILTER_VALIDATE_EMAIL)) {
 
@@ -2045,15 +2138,39 @@ if (isset($_POST['add_ticket_reply'])) {
 
             // Slightly different email subject/text depending on if this update set auto-close
 
+            $ticket_url = "https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key";
             if ($ticket_status == 4) {
                 // Resolved
-                $subject = "Ticket resolved - [$ticket_prefix$ticket_number] - $ticket_subject | (pending closure)";
-                $body = "<i style=\'color: #808080\'>##- Please type your reply above this line -##</i><br><br>Hello $contact_name,<br><br>Your ticket regarding $ticket_subject has been marked as solved and is pending closure.<br><br>--------------------------------<br>$ticket_reply<br>--------------------------------<br><br>If your request/issue is resolved, you can simply ignore this email. If you need further assistance, please reply or <a href=\'https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key\'>re-open</a> to let us know! <br><br>Ticket: $ticket_prefix$ticket_number<br>Subject: $ticket_subject<br>Status: $ticket_status_name<br>Portal: <a href=\'https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key\'>View ticket</a><br><br>--<br>$company_name - Support<br>$config_ticket_from_email<br>$company_phone";
+                $rendered = renderEmailTemplate('ticket_resolved_pending_closure', [
+                    'contact_name' => $contact_name,
+                    'ticket_subject' => $ticket_subject,
+                    'ticket_reply' => $ticket_reply,
+                    'ticket_reopen_url' => $ticket_url,
+                    'ticket_prefix' => $ticket_prefix,
+                    'ticket_number' => $ticket_number,
+                    'ticket_status' => $ticket_status_name,
+                    'ticket_url' => $ticket_url,
+                    'company_name' => $company_name,
+                    'company_phone' => $company_phone,
+                    'from_email' => $config_ticket_from_email,
+                ]);
             } else {
                 // Anything else
-                $subject = "Ticket update - [$ticket_prefix$ticket_number] - $ticket_subject";
-                $body = "<i style=\'color: #808080\'>##- Please type your reply above this line -##</i><br><br>Hello $contact_name,<br><br>Your ticket regarding $ticket_subject has been updated.<br><br>--------------------------------<br>$ticket_reply<br>--------------------------------<br><br>Ticket: $ticket_prefix$ticket_number<br>Subject: $ticket_subject<br>Status: $ticket_status_name<br>Portal: <a href=\'https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key\'>View ticket</a><br><br>--<br>$company_name - Support<br>$config_ticket_from_email<br>$company_phone";
+                $rendered = renderEmailTemplate('ticket_update', [
+                    'contact_name' => $contact_name,
+                    'ticket_subject' => $ticket_subject,
+                    'ticket_reply' => $ticket_reply,
+                    'ticket_prefix' => $ticket_prefix,
+                    'ticket_number' => $ticket_number,
+                    'ticket_status_name' => $ticket_status_name,
+                    'ticket_url' => $ticket_url,
+                    'company_name' => $company_name,
+                    'company_phone' => $company_phone,
+                    'from_email' => $config_ticket_from_email,
+                ]);
             }
+            $subject = $rendered['subject'];
+            $body = $rendered['body'];
 
             if (filter_var($contact_email, FILTER_VALIDATE_EMAIL)) {
 
@@ -2485,8 +2602,21 @@ if (isset($_GET['resolve_ticket'])) {
         $company_phone = escapeSql(formatPhoneNumber($row['company_phone'], $row['company_phone_country_code']));
 
         // EMAIL
-        $subject = "Ticket resolved - [$ticket_prefix$ticket_number] - $ticket_subject | (pending closure)";
-        $body = "<i style=\'color: #808080\'>##- Please type your reply above this line -##</i><br><br>Hello $contact_name,<br><br>Your ticket regarding $ticket_subject has been marked as solved and is pending closure.<br><br>If your request/issue is resolved, you can simply ignore this email. If you need further assistance, please reply or <a href=\'https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key\'>re-open</a> to let us know! <br><br>Ticket: $ticket_prefix$ticket_number<br>Subject: $ticket_subject<br>Status: $ticket_status<br>Portal: <a href=\'https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key\'>View ticket</a><br><br>--<br>$company_name - Support<br>$config_ticket_from_email<br>$company_phone";
+        $rendered = renderEmailTemplate('ticket_resolved_pending_closure', [
+            'contact_name' => $contact_name,
+            'ticket_subject' => $ticket_subject,
+            'ticket_reply' => '',
+            'ticket_reopen_url' => "https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key",
+            'ticket_prefix' => $ticket_prefix,
+            'ticket_number' => $ticket_number,
+            'ticket_status' => $ticket_status,
+            'ticket_url' => "https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key",
+            'company_name' => $company_name,
+            'company_phone' => $company_phone,
+            'from_email' => $config_ticket_from_email,
+        ]);
+        $subject = $rendered['subject'];
+        $body = $rendered['body'];
 
         // Check email valid
         if (filter_var($contact_email, FILTER_VALIDATE_EMAIL)) {
@@ -2587,8 +2717,19 @@ if (isset($_GET['close_ticket'])) {
         $company_phone = escapeSql(formatPhoneNumber($row['company_phone'], $row['company_phone_country_code']));
 
         // EMAIL
-        $subject = "Ticket closed - [$ticket_prefix$ticket_number] - $ticket_subject | (do not reply)";
-        $body = "Hello $contact_name,<br><br>Your ticket regarding \"$ticket_subject\" has been closed. <br><br> We hope the request/issue was resolved to your satisfaction, please provide your feedback <a href=\'https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key\'>here</a>. <br>If you need further assistance, please raise a new ticket using the below details. Please do not reply to this email. <br><br>Ticket: $ticket_prefix$ticket_number<br>Subject: $ticket_subject<br>Portal: https://$config_base_url/client/ticket.php?id=$ticket_id<br><br>--<br>$company_name - Support<br>$config_ticket_from_email<br>$company_phone";
+        $rendered = renderEmailTemplate('ticket_closed', [
+            'contact_name' => $contact_name,
+            'ticket_subject' => $ticket_subject,
+            'feedback_url' => "https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key",
+            'ticket_prefix' => $ticket_prefix,
+            'ticket_number' => $ticket_number,
+            'ticket_portal_url' => "https://$config_base_url/client/ticket.php?id=$ticket_id",
+            'company_name' => $company_name,
+            'company_phone' => $company_phone,
+            'from_email' => $config_ticket_from_email,
+        ]);
+        $subject = $rendered['subject'];
+        $body = $rendered['body'];
 
         // Check email valid
         if (filter_var($contact_email, FILTER_VALIDATE_EMAIL)) {
@@ -3176,52 +3317,66 @@ if (isset($_POST['edit_ticket_schedule'])) {
     /// Create iCal event
     $cal_str = createiCalStr($schedule, $cal_subject, $cal_description, $cal_location, getTicketCalendarUid($ticket_id));
 
+    $ticket_agent_url = "https://$config_base_url/agent/ticket.php?ticket_id=$ticket_id$client_uri";
+    $ticket_client_portal_url = "https://$config_base_url/client/ticket.php?id=$ticket_id";
+
     // Notify the agent of the scheduled work
+    $rendered_agent = renderEmailTemplate('ticket_scheduled_agent', [
+        'user_name' => $user_name,
+        'ticket_subject' => $ticket_subject,
+        'schedule_datetime' => $email_datetime,
+        'ticket_url' => $ticket_agent_url,
+        'ticket_link' => $ticket_link,
+        'ticket_prefix' => $ticket_prefix,
+        'ticket_number' => $ticket_number,
+        'company_name' => $session_company_name,
+        'from_email' => $config_ticket_from_email,
+    ]);
     $data[] = [
             'from' => $config_ticket_from_email,
             'from_name' => $config_ticket_from_name,
             'recipient' => $user_email,
             'recipient_name' => $user_name,
-            'subject' => "Ticket Scheduled - [$ticket_prefix$ticket_number] - $ticket_subject",
-            'body' => "Hello, " . $user_name . "<br><br>The ticket regarding $ticket_subject has been scheduled for $email_datetime.<br><br>--------------------------------<br><a href=\"https://$config_base_url/agent/ticket.php?ticket_id=$ticket_id$client_uri\">$ticket_link</a><br>--------------------------------<br><br>Please do not reply to this email. <br><br>Ticket: $ticket_prefix$ticket_number<br>Subject: $ticket_subject<br>Portal: https://$config_base_url/agent/ticket.php?ticket_id=$ticket_id$client_uri<br><br>~<br>$session_company_name<br>Support Department<br>$config_ticket_from_email",
+            'subject' => $rendered_agent['subject'],
+            'body' => $rendered_agent['body'],
             'cal_str' => $cal_str
         ];
 
     if ($config_ticket_client_general_notifications) {
         // Notify the ticket contact of the scheduled work
+        $rendered_contact = renderEmailTemplate('ticket_scheduled_contact', [
+            'contact_name' => $contact_name,
+            'ticket_subject' => $ticket_subject,
+            'schedule_datetime' => $email_datetime,
+            'ticket_portal_url' => $ticket_client_portal_url,
+            'ticket_prefix' => $ticket_prefix,
+            'ticket_number' => $ticket_number,
+            'company_name' => $session_company_name,
+            'from_email' => $config_ticket_from_email,
+        ]);
         $data[] = [
             'from' => $config_ticket_from_email,
             'from_name' => $config_ticket_from_name,
             'recipient' => $contact_email,
             'recipient_name' => $contact_name,
-            'subject' => "Ticket Scheduled - [$ticket_prefix$ticket_number] - $ticket_subject",
-            'body' => mysqli_escape_string($mysqli, "<div class='header'>
-                                Hello, $contact_name
-                            </div>
-                            Your ticket regarding $ticket_subject has been scheduled for $email_datetime.
-                            <br><br>
-                            <a href='https://$config_base_url/client/ticket.php?id=$ticket_id' class='link-button'>Access your ticket here</a>
-                            <br><br>
-                            Please do not reply to this email.
-                            <br><br>
-                            <strong>Ticket:</strong> $ticket_prefix$ticket_number<br>
-                            <strong>Subject:</strong> $ticket_subject<br>
-                            <br><br>
-                            <div class='footer'>
-                                ~<br>
-                                $session_company_name<br>
-                                Support Department<br>
-                                $config_ticket_from_email<br>
-                            </div>
-                            <div class='no-reply'>
-                                This is an automated message. Please do not reply directly to this email.
-                            </div>"),
+            'subject' => $rendered_contact['subject'],
+            'body' => mysqli_escape_string($mysqli, $rendered_contact['body']),
             'cal_str' => $cal_str
         ];
 
         // Notify the watchers of the scheduled work
         $sql_watchers = mysqli_query($mysqli, "SELECT watcher_email FROM ticket_watchers WHERE watcher_ticket_id = $ticket_id");
 
+        $rendered_watcher = renderEmailTemplate('ticket_scheduled_watcher', [
+            'ticket_subject' => $ticket_subject,
+            'schedule_datetime' => $email_datetime,
+            'ticket_portal_url' => $ticket_client_portal_url,
+            'ticket_link' => $ticket_link,
+            'ticket_prefix' => $ticket_prefix,
+            'ticket_number' => $ticket_number,
+            'company_name' => $session_company_name,
+            'from_email' => $config_ticket_from_email,
+        ]);
         while ($row = mysqli_fetch_assoc($sql_watchers)) {
             $watcher_email = escapeSql($row['watcher_email']);
             $data[] = [
@@ -3229,29 +3384,8 @@ if (isset($_POST['edit_ticket_schedule'])) {
                 'from_name' => $config_ticket_from_name,
                 'recipient' => $watcher_email,
                 'recipient_name' => $watcher_email,
-                'subject' => "Ticket Scheduled - [$ticket_prefix$ticket_number] - $ticket_subject",
-                'body' => mysqli_escape_string($mysqli, escapeHtml("<div class='header'>
-            Hello,
-        </div>
-        The ticket regarding $ticket_subject has been scheduled for $email_datetime.
-        <br><br>
-        <a href='https://$config_base_url/client/ticket.php?id=$ticket_id' class='link-button'>$ticket_link</a>
-        <br><br>
-        Please do not reply to this email.
-        <br><br>
-        <strong>Ticket:</strong> $ticket_prefix$ticket_number<br>
-        <strong>Subject:</strong> $ticket_subject<br>
-        <strong>Portal:</strong> <a href='https://$config_base_url/client/ticket.php?id=$ticket_id'>Access the ticket here</a>
-        <br><br>
-        <div class='footer'>
-            ~<br>
-            $session_company_name<br>
-            Support Department<br>
-            $config_ticket_from_email<br>
-        </div>
-        <div class='no-reply'>
-            This is an automated message. Please do not reply directly to this email.
-        </div>")),
+                'subject' => $rendered_watcher['subject'],
+                'body' => mysqli_escape_string($mysqli, escapeHtml($rendered_watcher['body'])),
                 'cal_str' => $cal_str
             ];
         }
@@ -3341,52 +3475,64 @@ if (isset($_GET['cancel_ticket_schedule'])) {
     $cal_subject = $ticket_number . ": " . $client_name . " - " . $ticket_subject;
     $cal_str = createiCalStrCancel($ticket_schedule, $cal_subject, getTicketCalendarUid($ticket_id));
 
+    $ticket_agent_url = "https://$config_base_url/agent/ticket.php?ticket_id=$ticket_id$client_uri";
+    $ticket_client_portal_url = "https://$config_base_url/client/ticket.php?id=$ticket_id";
+
     // Notify the agent of the cancellation
+    $rendered_agent = renderEmailTemplate('ticket_schedule_cancelled_agent', [
+        'user_name' => $user_name,
+        'ticket_subject' => $ticket_subject,
+        'ticket_url' => $ticket_agent_url,
+        'ticket_link' => $ticket_link,
+        'ticket_prefix' => $ticket_prefix,
+        'ticket_number' => $ticket_number,
+        'ticket_portal_url' => "https://$config_base_url/agent/ticket.php?id=$ticket_id&client_id=$client_id",
+        'company_name' => $session_company_name,
+        'from_email' => $config_ticket_from_email,
+    ]);
     $data[] = [
             // User Email
             'from' => $config_ticket_from_email,
             'from_name' => $config_ticket_from_name,
             'recipient' => $user_email,
             'recipient_name' => $user_name,
-            'subject' => "Ticket Schedule Cancelled - [$ticket_prefix$ticket_number] - $ticket_subject",
-            'body' => "Hello, " . $user_name . "<br><br>Scheduled work for the ticket regarding $ticket_subject has been cancelled.<br><br>--------------------------------<br><a href=\"https://$config_base_url/agent/ticket.php?ticket_id=$ticket_id$client_uri\">$ticket_link</a><br>--------------------------------<br><br>Please do not reply to this email. <br><br>Ticket: $ticket_prefix$ticket_number<br>Subject: $ticket_subject<br>Portal: https://$config_base_url/agent/ticket.php?id=$ticket_id&client_id=$client_id<br><br>~<br>$session_company_name<br>Support Department<br>$config_ticket_from_email",
+            'subject' => $rendered_agent['subject'],
+            'body' => $rendered_agent['body'],
             'cal_str' => $cal_str
         ];
 
     if ($config_ticket_client_general_notifications) {
         // Notify the ticket contact of the cancellation
+        $rendered_contact = renderEmailTemplate('ticket_schedule_cancelled_contact', [
+            'contact_name' => $contact_name,
+            'ticket_subject' => $ticket_subject,
+            'ticket_portal_url' => $ticket_client_portal_url,
+            'ticket_prefix' => $ticket_prefix,
+            'ticket_number' => $ticket_number,
+            'company_name' => $session_company_name,
+            'from_email' => $config_ticket_from_email,
+        ]);
         $data[] = [
             'from' => $config_ticket_from_email,
             'from_name' => $config_ticket_from_name,
             'recipient' => $contact_email,
             'recipient_name' => $contact_name,
-            'subject' => "Ticket Schedule Cancelled - [$ticket_prefix$ticket_number] - $ticket_subject",
-            'body' => mysqli_escape_string($mysqli, "<div class='header'>
-                                Hello, $contact_name
-                            </div>
-                            Scheduled work for your ticket regarding $ticket_subject has been cancelled.
-                            <br><br>
-                            <a href='https://$config_base_url/client/ticket.php?id=$ticket_id' class='link-button'>Access your ticket here</a>
-                            <br><br>
-                            Please do not reply to this email.
-                            <br><br>
-                            <strong>Ticket:</strong> $ticket_prefix$ticket_number<br>
-                            <strong>Subject:</strong> $ticket_subject<br>
-                            <br><br>
-                            <div class='footer'>
-                                ~<br>
-                                $session_company_name<br>
-                                Support Department<br>
-                                $config_ticket_from_email<br>
-                            </div>
-                            <div class='no-reply'>
-                                This is an automated message. Please do not reply directly to this email.
-                            </div>"),
+            'subject' => $rendered_contact['subject'],
+            'body' => mysqli_escape_string($mysqli, $rendered_contact['body']),
             'cal_str' => $cal_str
         ];
 
         // Notify the watchers of the cancellation
         $sql_watchers = mysqli_query($mysqli, "SELECT watcher_email FROM ticket_watchers WHERE watcher_ticket_id = $ticket_id");
+        $rendered_watcher = renderEmailTemplate('ticket_schedule_cancelled_watcher', [
+            'ticket_subject' => $ticket_subject,
+            'ticket_portal_url' => $ticket_client_portal_url,
+            'ticket_link' => $ticket_link,
+            'ticket_prefix' => $ticket_prefix,
+            'ticket_number' => $ticket_number,
+            'company_name' => $session_company_name,
+            'from_email' => $config_ticket_from_email,
+        ]);
         while ($row = mysqli_fetch_assoc($sql_watchers)) {
             $watcher_email = escapeSql($row['watcher_email']);
             $data[] = [
@@ -3394,29 +3540,8 @@ if (isset($_GET['cancel_ticket_schedule'])) {
                 'from_name' => $config_ticket_from_name,
                 'recipient' => $watcher_email,
                 'recipient_name' => $watcher_email,
-                'subject' => "Ticket Schedule Cancelled - [$ticket_prefix$ticket_number] - $ticket_subject",
-                'body' => mysqli_escape_string($mysqli, escapeHtml("<div class='header'>
-            Hello,
-        </div>
-        Scheduled work for the ticket regarding $ticket_subject has been cancelled.
-        <br><br>
-        <a href='https://$config_base_url/client/ticket.php?id=$ticket_id' class='link-button'>$ticket_link</a>
-        <br><br>
-        Please do not reply to this email.
-        <br><br>
-        <strong>Ticket:</strong> $ticket_prefix$ticket_number<br>
-        <strong>Subject:</strong> $ticket_subject<br>
-        <strong>Portal:</strong> <a href='https://$config_base_url/client/ticket.php?id=$ticket_id'>Access the ticket here</a>
-        <br><br>
-        <div class='footer'>
-            ~<br>
-            $session_company_name<br>
-            Support Department<br>
-            $config_ticket_from_email<br>
-        </div>
-        <div class='no-reply'>
-            This is an automated message. Please do not reply directly to this email.
-        </div>")),
+                'subject' => $rendered_watcher['subject'],
+                'body' => mysqli_escape_string($mysqli, escapeHtml($rendered_watcher['body'])),
                 'cal_str' => $cal_str
             ];
         }

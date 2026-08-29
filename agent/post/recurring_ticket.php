@@ -191,18 +191,28 @@ if (isset($_POST['bulk_force_recurring_tickets'])) {
                 // Notify client by email their ticket has been raised, if general notifications are turned on & there is a valid contact email
                 if (!empty($config_smtp_provider) && $config_ticket_client_general_notifications == 1 && filter_var($contact_email, FILTER_VALIDATE_EMAIL)) {
 
-                    $email_subject = "Ticket Created - [$ticket_prefix$ticket_number] - $ticket_subject (scheduled)";
                     // SLA response commitment for this client + priority, empty when no SLA applies
                     $sla_notice = escapeSql(getTicketSlaEmailNotice($id, $company_phone));
-                    $email_body = "<i style=\'color: #808080\'>##- Please type your reply above this line -##</i><br><br>Hello $contact_name,<br><br>A ticket regarding \"$ticket_subject\" has been automatically created for you.<br><br>--------------------------------<br>$ticket_details--------------------------------<br><br>Ticket: $ticket_prefix$ticket_number<br>Subject: $ticket_subject<br>Status: Open<br>Portal: https://$config_base_url/client/ticket.php?id=$id$sla_notice<br><br>--<br>$company_name - Support<br>$config_ticket_from_email<br>$company_phone";
+                    $rendered = renderEmailTemplate('ticket_created_scheduled', [
+                        'contact_name' => $contact_name,
+                        'ticket_subject' => $ticket_subject,
+                        'ticket_details' => $ticket_details,
+                        'ticket_prefix' => $ticket_prefix,
+                        'ticket_number' => $ticket_number,
+                        'ticket_url' => "https://$config_base_url/client/ticket.php?id=$id",
+                        'sla_notice' => $sla_notice,
+                        'company_name' => $company_name,
+                        'company_phone' => $company_phone,
+                        'from_email' => $config_ticket_from_email,
+                    ]);
 
                     $email = [
                         'from' => $config_ticket_from_email,
                         'from_name' => $config_ticket_from_name,
                         'recipient' => $contact_email,
                         'recipient_name' => $contact_name,
-                        'subject' => $email_subject,
-                        'body' => $email_body
+                        'subject' => $rendered['subject'],
+                        'body' => $rendered['body']
                     ];
 
                     $data[] = $email;
@@ -342,18 +352,28 @@ if (isset($_GET['force_recurring_ticket'])) {
         // Notify client by email their ticket has been raised, if general notifications are turned on & there is a valid contact email
         if (!empty($config_smtp_provider) && $config_ticket_client_general_notifications == 1 && filter_var($contact_email, FILTER_VALIDATE_EMAIL)) {
 
-            $email_subject = "Ticket created - [$ticket_prefix$ticket_number] - $ticket_subject (scheduled)";
             // SLA response commitment for this client + priority, empty when no SLA applies
             $sla_notice = escapeSql(getTicketSlaEmailNotice($id, $company_phone));
-            $email_body = "<i style=\'color: #808080\'>##- Please type your reply above this line -##</i><br><br>Hello $contact_name,<br><br>A ticket regarding \"$ticket_subject\" has been automatically created for you.<br><br>--------------------------------<br>$ticket_details--------------------------------<br><br>Ticket: $ticket_prefix$ticket_number<br>Subject: $ticket_subject<br>Status: Open<br>Portal: https://$config_base_url/client/ticket.php?id=$id$sla_notice<br><br>--<br>$company_name - Support<br>$config_ticket_from_email<br>$company_phone";
+            $rendered = renderEmailTemplate('ticket_created_scheduled', [
+                'contact_name' => $contact_name,
+                'ticket_subject' => $ticket_subject,
+                'ticket_details' => $ticket_details,
+                'ticket_prefix' => $ticket_prefix,
+                'ticket_number' => $ticket_number,
+                'ticket_url' => "https://$config_base_url/client/ticket.php?id=$id",
+                'sla_notice' => $sla_notice,
+                'company_name' => $company_name,
+                'company_phone' => $company_phone,
+                'from_email' => $config_ticket_from_email,
+            ]);
 
             $email = [
                 'from' => $config_ticket_from_email,
                 'from_name' => $config_ticket_from_name,
                 'recipient' => $contact_email,
                 'recipient_name' => $contact_name,
-                'subject' => $email_subject,
-                'body' => $email_body
+                'subject' => $rendered['subject'],
+                'body' => $rendered['body']
             ];
 
             $data[] = $email;
@@ -529,8 +549,16 @@ if (isset($_POST['bulk_assign_recurring_ticket'])) {
                 $config_ticket_from_email = escapeSql($config_ticket_from_email);
                 $company_name = escapeSql($session_company_name);
 
-                $subject = "$config_app_name - $recurring_ticket_count recurring tickets have been assigned to you";
-                $body = "Hi $agent_name, <br><br>$session_name assigned $recurring_ticket_count recurring tickets to you!<br><br>$tickets_assigned_body<br>Thanks, <br>$session_name<br>$company_name";
+                $rendered = renderEmailTemplate('recurring_ticket_assigned_bulk', [
+                    'app_name' => $config_app_name,
+                    'ticket_count' => $recurring_ticket_count,
+                    'agent_name' => $agent_name,
+                    'session_name' => $session_name,
+                    'tickets_list' => $tickets_assigned_body,
+                    'company_name' => $company_name,
+                ]);
+                $subject = $rendered['subject'];
+                $body = $rendered['body'];
 
                 // Email Ticket Agent
                 // Queue Mail

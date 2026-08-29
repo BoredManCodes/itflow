@@ -210,8 +210,15 @@ if (isset($_POST['add_event'])) {
         $config_mail_from_name = escapeSql($config_mail_from_name);
         $config_mail_from_email = escapeSql($config_mail_from_email);
 
-        $subject = "New Calendar Event";
-        $body = "Hello $contact_name,<br><br>A calendar event has been scheduled:<br><br>Event Title: $title<br>Event Date: $start<br><br><br>--<br>$company_name<br>$company_phone";
+        $rendered = renderEmailTemplate('calendar_event_invite', [
+            'contact_name' => $contact_name,
+            'event_title' => $title,
+            'event_start' => $start,
+            'company_name' => $company_name,
+            'company_phone' => $company_phone,
+        ]);
+        $subject = $rendered['subject'];
+        $body = $rendered['body'];
 
         $data = [
             [
@@ -286,8 +293,15 @@ if (isset($_POST['edit_event'])) {
         $config_mail_from_email = escapeSql($config_mail_from_email);
 
 
-        $subject = "Calendar Event Rescheduled";
-        $body = "Hello $contact_name,<br><br>A calendar event has been rescheduled:<br><br>Event Title: $title<br>Event Date: $start<br><br><br>--<br>$company_name<br>$company_phone";
+        $rendered = renderEmailTemplate('calendar_event_rescheduled', [
+            'contact_name' => $contact_name,
+            'event_title' => $title,
+            'event_start' => $start,
+            'company_name' => $company_name,
+            'company_phone' => $company_phone,
+        ]);
+        $subject = $rendered['subject'];
+        $body = $rendered['body'];
 
         $data = [
             [

@@ -95,8 +95,20 @@ if (isset($_POST['add_payment'])) {
 
             if ($email_receipt == 1) {
 
-                $subject = "Payment Received - Invoice $invoice_prefix$invoice_number";
-                $body = "Hello $contact_name,<br><br>We have received your payment in full for the amount of " . numfmt_format_currency($currency_format, $amount, $invoice_currency_code) . " for invoice <a href=\'https://$config_base_url/guest/guest_view_invoice.php?invoice_id=$invoice_id&url_key=$invoice_url_key\'>$invoice_prefix$invoice_number</a>. Please keep this email as a receipt for your records.<br><br>Amount Paid: " . numfmt_format_currency($currency_format, $amount, $invoice_currency_code) . "<br>Payment Method: $payment_method<br>Payment Reference: $reference<br><br>Thank you for your business!<br><br><br>--<br>$company_name - Billing Department<br>$config_invoice_from_email<br>$company_phone";
+                $rendered = renderEmailTemplate('payment_received_full', [
+                    'contact_name' => $contact_name,
+                    'amount' => numfmt_format_currency($currency_format, $amount, $invoice_currency_code),
+                    'invoice_url' => "https://$config_base_url/guest/guest_view_invoice.php?invoice_id=$invoice_id&url_key=$invoice_url_key",
+                    'invoice_prefix' => $invoice_prefix,
+                    'invoice_number' => $invoice_number,
+                    'payment_method' => $payment_method,
+                    'payment_reference' => $reference,
+                    'company_name' => $company_name,
+                    'company_phone' => $company_phone,
+                    'from_email' => $config_invoice_from_email,
+                ]);
+                $subject = $rendered['subject'];
+                $body = $rendered['body'];
 
                 // Queue Mail
                 $email = [
@@ -130,8 +142,21 @@ if (isset($_POST['add_payment'])) {
 
             if ($email_receipt == 1) {
 
-                $subject = "Partial Payment Received - Invoice $invoice_prefix$invoice_number";
-                $body = "Hello $contact_name,<br><br>We have received partial payment in the amount of " . numfmt_format_currency($currency_format, $amount, $invoice_currency_code) . " and it has been applied to invoice <a href=\'https://$config_base_url/guest/guest_view_invoice.php?invoice_id=$invoice_id&url_key=$invoice_url_key\'>$invoice_prefix$invoice_number</a>. Please keep this email as a receipt for your records.<br><br>Amount Paid: " . numfmt_format_currency($currency_format, $amount, $invoice_currency_code) . "<br>Payment Method: $payment_method<br>Payment Reference: $reference<br>Invoice Balance: " . numfmt_format_currency($currency_format, $invoice_balance, $invoice_currency_code) . "<br><br>Thank you for your business!<br><br><br>~<br>$company_name - Billing<br>$config_invoice_from_email<br>$company_phone";
+                $rendered = renderEmailTemplate('payment_received_partial', [
+                    'contact_name' => $contact_name,
+                    'amount' => numfmt_format_currency($currency_format, $amount, $invoice_currency_code),
+                    'invoice_url' => "https://$config_base_url/guest/guest_view_invoice.php?invoice_id=$invoice_id&url_key=$invoice_url_key",
+                    'invoice_prefix' => $invoice_prefix,
+                    'invoice_number' => $invoice_number,
+                    'payment_method' => $payment_method,
+                    'payment_reference' => $reference,
+                    'invoice_balance' => numfmt_format_currency($currency_format, $invoice_balance, $invoice_currency_code),
+                    'company_name' => $company_name,
+                    'company_phone' => $company_phone,
+                    'from_email' => $config_invoice_from_email,
+                ]);
+                $subject = $rendered['subject'];
+                $body = $rendered['body'];
 
                 // Queue Mail
                 $email = [
@@ -449,8 +474,18 @@ if (isset($_POST['add_payment_stripe'])) {
 
         // Email receipt
         if (!empty($config_smtp_provider)) {
-            $subject = "Payment Received - Invoice $invoice_prefix$invoice_number";
-            $body = "Hello $contact_name,<br><br>We have received online payment for the amount of " . numfmt_format_currency($currency_format, $invoice_amount, $invoice_currency_code) . " for invoice <a href=\'https://$config_base_url/guest/guest_view_invoice.php?invoice_id=$invoice_id&url_key=$invoice_url_key\'>$invoice_prefix$invoice_number</a>. Please keep this email as a receipt for your records.<br><br>Amount Paid: " . numfmt_format_currency($currency_format, $invoice_amount, $invoice_currency_code) . "<br><br>Thank you for your business!<br><br><br>--<br>$company_name - Billing Department<br>$config_invoice_from_email<br>$company_phone";
+            $rendered = renderEmailTemplate('payment_received_online', [
+                'contact_name' => $contact_name,
+                'amount' => numfmt_format_currency($currency_format, $invoice_amount, $invoice_currency_code),
+                'invoice_url' => "https://$config_base_url/guest/guest_view_invoice.php?invoice_id=$invoice_id&url_key=$invoice_url_key",
+                'invoice_prefix' => $invoice_prefix,
+                'invoice_number' => $invoice_number,
+                'company_name' => $company_name,
+                'company_phone' => $company_phone,
+                'from_email' => $config_invoice_from_email,
+            ]);
+            $subject = $rendered['subject'];
+            $body = $rendered['body'];
 
             // Queue Mail
             $data = [
@@ -466,8 +501,15 @@ if (isset($_POST['add_payment_stripe'])) {
 
             // Email the internal notification address too
             if (!empty($config_invoice_paid_notification_email)) {
-                $subject = "Payment Received - $client_name - Invoice $invoice_prefix$invoice_number";
-                $body = "Hello, <br><br>This is a notification that an invoice has been paid in ITFlow. Below is a copy of the receipt sent to the client:-<br><br>--------<br><br>Hello $contact_name,<br><br>We have received online payment for the amount of " . numfmt_format_currency($currency_format, $invoice_amount, $invoice_currency_code) . " for invoice <a href=\'https://$config_base_url/guest/guest_view_invoice.php?invoice_id=$invoice_id&url_key=$invoice_url_key\'>$invoice_prefix$invoice_number</a>. Please keep this email as a receipt for your records.<br><br>Amount Paid: " . numfmt_format_currency($currency_format, $invoice_amount, $invoice_currency_code) . "<br><br>Thank you for your business!<br><br><br>--<br>$company_name - Billing Department<br>$config_invoice_from_email<br>$company_phone";
+                $rendered_internal = renderEmailTemplate('payment_received_internal', [
+                    'app_name' => $config_app_name,
+                    'client_name' => $client_name,
+                    'invoice_prefix' => $invoice_prefix,
+                    'invoice_number' => $invoice_number,
+                    'client_receipt_body' => $body,
+                ]);
+                $subject = $rendered_internal['subject'];
+                $body = $rendered_internal['body'];
 
                 $data[] = [
                     'from' => $config_invoice_from_email,
@@ -625,8 +667,16 @@ if (isset($_POST['add_bulk_payment'])) {
         $config_invoice_from_name = escapeSql($config_invoice_from_name);
         $config_invoice_from_email = escapeSql($config_invoice_from_email);
 
-        $subject = "Payment Received - Multiple Invoices";
-        $body = "Hello $contact_name,<br><br>Thank you for your payment of " . numfmt_format_currency($currency_format, $bulk_payment_amount_static, $currency_code) . " We\'ve applied your payment to the following invoices, updating their balances accordingly:<br><br>$email_body_invoices<br><br><br>We appreciate your continued business!<br><br>Sincerely,<br>$company_name - Billing<br>$config_invoice_from_email<br>$company_phone";
+        $rendered = renderEmailTemplate('payment_received_multiple', [
+            'contact_name' => $contact_name,
+            'amount' => numfmt_format_currency($currency_format, $bulk_payment_amount_static, $currency_code),
+            'invoice_list' => $email_body_invoices,
+            'company_name' => $company_name,
+            'company_phone' => $company_phone,
+            'from_email' => $config_invoice_from_email,
+        ]);
+        $subject = mysqli_real_escape_string($mysqli, $rendered['subject']);
+        $body = mysqli_real_escape_string($mysqli, $rendered['body']);
 
         // Queue Mail
         mysqli_query($mysqli, "INSERT INTO email_queue SET email_recipient = '$contact_email', email_recipient_name = '$contact_name', email_from = '$config_invoice_from_email', email_from_name = '$config_invoice_from_name', email_subject = '$subject', email_content = '$body'");

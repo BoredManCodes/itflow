@@ -58,8 +58,16 @@ if (isset($_POST['add_ticket'])) {
 
         $client_name = escapeSql($session_client_name);
 
-        $email_subject = "ITFlow - New Ticket - $client_name: $subject";
-        $email_body = "Hello, <br><br>This is a notification that a new ticket has been raised in ITFlow. <br>Client: $client_name<br>Priority: $priority<br>Link: https://$config_base_url/agent/ticket.php?ticket_id=$ticket_id&client_id=$session_client_id <br><br><b>$subject</b><br>$details";
+        $rendered = renderEmailTemplate('new_ticket_notification_internal', [
+            'app_name' => $config_app_name,
+            'client_name' => $client_name,
+            'ticket_subject' => $subject,
+            'priority' => $priority,
+            'ticket_url' => "https://$config_base_url/agent/ticket.php?ticket_id=$ticket_id&client_id=$session_client_id",
+            'ticket_details' => $details,
+        ]);
+        $email_subject = $rendered['subject'];
+        $email_body = $rendered['body'];
 
         // Queue Mail
         $data = [
@@ -136,8 +144,17 @@ if (isset($_POST['add_ticket_comment'])) {
             $tech_email = escapeSql($tech_details['user_email']);
             $tech_name = escapeSql($tech_details['user_name']);
 
-            $subject = "$config_app_name Ticket updated - [$config_ticket_prefix$ticket_number] $ticket_subject";
-            $body    = "Hello $tech_name,<br><br>A new reply has been added to the below ticket, check ITFlow for full details.<br><br>Client: $client_name<br>Ticket: $config_ticket_prefix$ticket_number<br>Subject: $ticket_subject<br><br>https://$config_base_url/agent/ticket.php?ticket_id=$ticket_id&client_id=$session_client_id";
+            $rendered = renderEmailTemplate('ticket_reply_tech_notification', [
+                'app_name' => $config_app_name,
+                'tech_name' => $tech_name,
+                'client_name' => $client_name,
+                'ticket_prefix' => $config_ticket_prefix,
+                'ticket_number' => $ticket_number,
+                'ticket_subject' => $ticket_subject,
+                'ticket_url' => "https://$config_base_url/agent/ticket.php?ticket_id=$ticket_id&client_id=$session_client_id",
+            ]);
+            $subject = $rendered['subject'];
+            $body    = $rendered['body'];
 
             $data = [
                 [
@@ -897,8 +914,18 @@ if (isset($_GET['add_payment_by_provider'])) {
 
         // Email receipt
         if (!empty($config_smtp_host)) {
-            $subject = "Payment Received - Invoice $invoice_prefix$invoice_number";
-            $body = "Hello $contact_name,<br><br>We have received online payment for the amount of " . numfmt_format_currency($currency_format, $invoice_amount, $invoice_currency_code) . " for invoice <a href=\'https://$config_base_url/guest/guest_view_invoice.php?invoice_id=$invoice_id&url_key=$invoice_url_key\'>$invoice_prefix$invoice_number</a>. Please keep this email as a receipt for your records.<br><br>Amount Paid: " . numfmt_format_currency($currency_format, $invoice_amount, $invoice_currency_code) . "<br><br>Thank you for your business!<br><br><br>--<br>$company_name - Billing Department<br>$config_invoice_from_email<br>$company_phone";
+            $rendered = renderEmailTemplate('payment_received_online', [
+                'contact_name' => $contact_name,
+                'amount' => numfmt_format_currency($currency_format, $invoice_amount, $invoice_currency_code),
+                'invoice_url' => "https://$config_base_url/guest/guest_view_invoice.php?invoice_id=$invoice_id&url_key=$invoice_url_key",
+                'invoice_prefix' => $invoice_prefix,
+                'invoice_number' => $invoice_number,
+                'company_name' => $company_name,
+                'company_phone' => $company_phone,
+                'from_email' => $config_invoice_from_email,
+            ]);
+            $subject = $rendered['subject'];
+            $body = $rendered['body'];
 
             // Queue Mail
             $data = [
@@ -914,8 +941,15 @@ if (isset($_GET['add_payment_by_provider'])) {
 
             // Email the internal notification address too
             if (!empty($config_invoice_paid_notification_email)) {
-                $subject = "Payment Received - $client_name - Invoice $invoice_prefix$invoice_number";
-                $body = "Hello, <br><br>This is a notification that an invoice has been paid in ITFlow. Below is a copy of the receipt sent to the client:-<br><br>--------<br><br>Hello $contact_name,<br><br>We have received online payment for the amount of " . numfmt_format_currency($currency_format, $invoice_amount, $invoice_currency_code) . " for invoice <a href=\'https://$config_base_url/guest/guest_view_invoice.php?invoice_id=$invoice_id&url_key=$invoice_url_key\'>$invoice_prefix$invoice_number</a>. Please keep this email as a receipt for your records.<br><br>Amount Paid: " . numfmt_format_currency($currency_format, $invoice_amount, $invoice_currency_code) . "<br><br>Thank you for your business!<br><br><br>--<br>$company_name - Billing Department<br>$config_invoice_from_email<br>$company_phone";
+                $rendered_internal = renderEmailTemplate('payment_received_internal', [
+                    'app_name' => $config_app_name,
+                    'client_name' => $client_name,
+                    'invoice_prefix' => $invoice_prefix,
+                    'invoice_number' => $invoice_number,
+                    'client_receipt_body' => $body,
+                ]);
+                $subject = $rendered_internal['subject'];
+                $body = $rendered_internal['body'];
 
                 $data[] = [
                     'from' => $config_invoice_from_email,
@@ -1236,13 +1270,15 @@ if (isset($_GET['stripe_save_card'])) {
     $config_invoice_from_name = escapeSql($row['config_invoice_from_name']);
 
     if (!empty($row['config_smtp_host'])) {
-        $subject = "Payment method saved";
-        $body = "Hello $session_contact_name<br><br>
-        Were writing to confirm that your payment details have been securely stored with Stripe our trusted payment processor.<br><br>
-        You authorized us to automatically bill your card ($saved_payment_description) for future invoices.<br><br>
-        You may update or remove your payment method at any time via the client portal.<br><br>
-        Thank you for your business!<br><br>
-        --<br>$company_name - Billing Department<br>$config_invoice_from_email<br>$company_phone";
+        $rendered = renderEmailTemplate('payment_method_saved', [
+            'contact_name' => $session_contact_name,
+            'payment_description' => $saved_payment_description,
+            'company_name' => $company_name,
+            'company_phone' => $company_phone,
+            'from_email' => $config_invoice_from_email,
+        ]);
+        $subject = $rendered['subject'];
+        $body = $rendered['body'];
 
         $data = [[
             'from' => $config_invoice_from_email,

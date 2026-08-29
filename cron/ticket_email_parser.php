@@ -166,10 +166,21 @@ function addTicket($contact_id, $contact_name, $contact_email, $client_id, $date
     // External email
     $data = [];
     if ($config_ticket_client_general_notifications == 1 && !preg_match($bad_pattern, $contact_email)) {
-        $subject_email = "Ticket created - [$config_ticket_prefix$ticket_number] - $subject";
         // SLA response commitment for this client + priority, empty when no SLA applies
         $sla_notice = getTicketSlaEmailNotice($id, $company_phone);
-        $body = "<i style='color: #808080'>##- Please type your reply above this line -##</i><br><br>Hello $contact_name,<br><br>Thank you for your email. A ticket regarding \"$subject\" has been automatically created for you.<br><br>Ticket: $config_ticket_prefix$ticket_number<br>Subject: $subject<br>Status: New<br>Portal: <a href='https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$id&url_key=$url_key'>View ticket</a>$sla_notice<br><br>--<br>$company_name - Support<br>$config_ticket_from_email<br>$company_phone";
+        $rendered = renderEmailTemplate('ticket_created_via_email', [
+            'contact_name' => $contact_name,
+            'ticket_subject' => $subject,
+            'ticket_prefix' => $config_ticket_prefix,
+            'ticket_number' => $ticket_number,
+            'ticket_url' => "https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$id&url_key=$url_key",
+            'sla_notice' => $sla_notice,
+            'company_name' => $company_name,
+            'company_phone' => $company_phone,
+            'from_email' => $config_ticket_from_email,
+        ]);
+        $subject_email = $rendered['subject'];
+        $body = $rendered['body'];
         $data[] = [
             'from' => $config_ticket_from_email,
             'from_name' => $config_ticket_from_name,
@@ -191,8 +202,16 @@ function addTicket($contact_id, $contact_name, $contact_email, $client_id, $date
             $client_name = escapeSql($client_row['client_name']);
             $client_uri = "&client_id=$client_id";
         }
-        $email_subject = "$config_app_name - New Ticket - $client_name: $subject";
-        $email_body = "Hello, <br><br>This is a notification that a new ticket has been raised in ITFlow. <br>Client: $client_name<br>Priority: Low (email parsed)<br>Link: https://$config_base_url/agent/ticket.php?ticket_id=$id$client_uri <br><br>--------------------------------<br><br><b>$subject</b><br>$message";
+        $rendered_internal = renderEmailTemplate('new_ticket_notification_internal', [
+            'app_name' => $config_app_name,
+            'client_name' => $client_name,
+            'ticket_subject' => $subject,
+            'priority' => 'Low (email parsed)',
+            'ticket_url' => "https://$config_base_url/agent/ticket.php?ticket_id=$id$client_uri",
+            'ticket_details' => $message,
+        ]);
+        $email_subject = $rendered_internal['subject'];
+        $email_body = $rendered_internal['body'];
 
         $data[] = [
             'from' => $config_ticket_from_email,
@@ -275,8 +294,13 @@ function addReply($from_email, $date, $subject, $ticket_number, $message, $attac
 
             appNotify("Ticket", "Email parser: $from_email attempted to re-open ticket $config_ticket_prefix_esc$ticket_number_esc2 (ID $ticket_id) - check inbox manually to see email", "/agent/ticket.php?ticket_id=$ticket_id$client_uri", $client_id);
 
-            $email_subject = "Action required: This ticket is already closed";
-            $email_body = "Hi there, <br><br>You've tried to reply to a ticket that is closed - we won't see your response. <br><br>Please raise a new ticket by sending a new e-mail to our support address below. <br><br>--<br>$company_name - Support<br>$config_ticket_from_email<br>$company_phone";
+            $rendered = renderEmailTemplate('ticket_reopen_blocked', [
+                'company_name' => $company_name,
+                'company_phone' => $company_phone,
+                'from_email' => $config_ticket_from_email,
+            ]);
+            $email_subject = $rendered['subject'];
+            $email_body = $rendered['body'];
 
             $data = [
                 [
@@ -344,8 +368,17 @@ function addReply($from_email, $date, $subject, $ticket_number, $message, $attac
                 $tech_email = escapeSql($tech_row['user_email']);
                 $tech_name = escapeSql($tech_row['user_name']);
 
-                $email_subject = "$config_app_name - Ticket updated - [$config_ticket_prefix$ticket_number] $ticket_subject";
-                $email_body    = "Hello $tech_name,<br><br>A new reply has been added to the below ticket.<br><br>Client: $client_name<br>Ticket: $config_ticket_prefix$ticket_number<br>Subject: $ticket_subject<br>Link: https://$config_base_url/agent/ticket.php?ticket_id=$ticket_id$client_uri<br><br>--------------------------------<br>$message_esc";
+                $rendered = renderEmailTemplate('ticket_reply_tech_notification', [
+                    'app_name' => $config_app_name,
+                    'tech_name' => $tech_name,
+                    'client_name' => $client_name,
+                    'ticket_prefix' => $config_ticket_prefix,
+                    'ticket_number' => $ticket_number,
+                    'ticket_subject' => $ticket_subject,
+                    'ticket_url' => "https://$config_base_url/agent/ticket.php?ticket_id=$ticket_id$client_uri",
+                ]);
+                $email_subject = $rendered['subject'];
+                $email_body    = $rendered['body'] . "<br><br>--------------------------------<br>$message_esc";
 
                 $data = [
                     [

@@ -107,8 +107,15 @@ function sendSlaAlert($ticket, $subject_line, $body_line)
     // single quotes - escape whole strings once here. The body keeps its HTML,
     // so it gets mysqli_real_escape_string directly (escapeSql strips tags),
     // same as the ticket email parser does for its bodies.
-    $email_subject = escapeSql("$subject_line: $ticket_ref - $ticket_subject");
-    $email_body = mysqli_real_escape_string($mysqli, "Hello,<br><br>$body_line<br><br>Ticket: $ticket_ref<br>Subject: $ticket_subject<br><br><a href='https://$config_base_url/agent/ticket.php?ticket_id=$ticket_id'>View ticket</a>");
+    $rendered = renderEmailTemplate('ticket_sla_alert', [
+        'sla_event' => $subject_line,
+        'ticket_ref' => $ticket_ref,
+        'ticket_subject' => $ticket_subject,
+        'sla_message' => $body_line,
+        'ticket_url' => "https://$config_base_url/agent/ticket.php?ticket_id=$ticket_id",
+    ]);
+    $email_subject = escapeSql($rendered['subject']);
+    $email_body = mysqli_real_escape_string($mysqli, $rendered['body']);
 
     $email_data = [];
 
