@@ -8,4 +8,4 @@
 defined('FROM_DB_UPDATER') || die("Direct file access is not allowed");
 
 mysqli_query($mysqli, "ALTER TABLE `settings`
-    ADD `config_theme_custom_color` VARCHAR(7) DEFAULT NULL");
+    ADD COLUMN IF NOT EXISTS `config_theme_custom_color` VARCHAR(7) DEFAULT NULL");
