@@ -51,6 +51,7 @@ if (isset($_POST['add_ticket'])) {
     $ticket_id = mysqli_insert_id($mysqli);
     applyTicketSla($ticket_id);
     applyTicketAutoAssign($ticket_id);
+    applyTicketRules($ticket_id);
 
     // Notify agent DL of the new ticket, if populated with a valid email
     if ($config_ticket_new_ticket_notification_email) {
