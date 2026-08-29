@@ -72,6 +72,7 @@ if (isset($_POST['add_project'])) {
 
             $ticket_id = mysqli_insert_id($mysqli);
             applyTicketSla($ticket_id);
+            applyTicketAutoAssign($ticket_id);
 
             // Task Templates for Ticket template and add the to the ticket
             $sql_task_templates = mysqli_query($mysqli,

@@ -192,6 +192,68 @@ function addTasksFromRecurringTicket($ticket_id, $recurring_ticket_id) {
 }
 
 /**
+ * Assigns a freshly-raised, still-unassigned ticket to the tech configured
+ * under Settings > Tickets > Auto-assign new tickets, if one is set.
+ *
+ * Call this right after applyTicketSla() at every place a ticket is
+ * created - it only acts when the ticket landed unassigned (ticket_assigned_to
+ * = 0), so it never overrides an assignee chosen at creation time, and it
+ * re-checks the configured tech is still an active, non-archived agent
+ * before using it.
+ *
+ * @param int $ticket_id The freshly created ticket.
+ *
+ * @return int The user_id the ticket was assigned to, or 0 if left untouched.
+ */
+function applyTicketAutoAssign($ticket_id) {
+
+    global $mysqli, $config_ticket_auto_assign_user_id;
+
+    $ticket_id = intval($ticket_id);
+    $auto_assign_user_id = intval($config_ticket_auto_assign_user_id ?? 0);
+
+    if (!$ticket_id || !$auto_assign_user_id) {
+        return 0;
+    }
+
+    $sql = mysqli_query($mysqli, "SELECT ticket_assigned_to, ticket_prefix, ticket_number, ticket_subject, ticket_client_id FROM tickets WHERE ticket_id = $ticket_id LIMIT 1");
+    if (!$sql || !mysqli_num_rows($sql)) {
+        return 0;
+    }
+    $ticket = mysqli_fetch_assoc($sql);
+
+    if (intval($ticket['ticket_assigned_to']) !== 0) {
+        return 0;
+    }
+
+    $user_sql = mysqli_query($mysqli, "SELECT user_id, user_name FROM users WHERE user_id = $auto_assign_user_id AND user_type = 1 AND user_status = 1 AND user_archived_at IS NULL LIMIT 1");
+    if (!$user_sql || !mysqli_num_rows($user_sql)) {
+        return 0;
+    }
+    $user = mysqli_fetch_assoc($user_sql);
+
+    mysqli_query($mysqli, "UPDATE tickets SET ticket_assigned_to = $auto_assign_user_id, ticket_status = 2 WHERE ticket_id = $ticket_id");
+    syncTicketSlaClock($ticket_id);
+
+    $agent_name = escapeSql($user['user_name']);
+    logTicketHistory($ticket_id, "Auto-assigned to $agent_name");
+
+    $ticket_prefix = escapeSql($ticket['ticket_prefix']);
+    $ticket_number = intval($ticket['ticket_number']);
+    $ticket_subject = escapeSql($ticket['ticket_subject']);
+    $client_id = intval($ticket['ticket_client_id']);
+    $client_uri = $client_id ? "&client_id=$client_id" : '';
+
+    $notification_text = "Ticket $ticket_prefix$ticket_number - Subject: $ticket_subject has been auto-assigned to you";
+    $notification_action = "/agent/ticket.php?ticket_id=$ticket_id$client_uri";
+    mysqli_query($mysqli, "INSERT INTO notifications SET notification_type = 'Ticket', notification = '$notification_text', notification_action = '$notification_action', notification_client_id = $client_id, notification_user_id = $auto_assign_user_id");
+    sendPushNotification($auto_assign_user_id, 'Ticket', $notification_text, $notification_action);
+
+    return $auto_assign_user_id;
+
+}
+
+/**
  * Reads the editable task rows posted by the ticket and recurring ticket modals.
  *
  * The rows submit as parallel tasks[] and task_estimates[] arrays, aligned by
