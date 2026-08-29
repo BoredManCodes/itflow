@@ -2791,6 +2791,61 @@ CREATE TABLE `ticket_replies` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `ticket_rule_actions`
+--
+
+DROP TABLE IF EXISTS `ticket_rule_actions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `ticket_rule_actions` (
+  `ticket_rule_action_id` int(11) NOT NULL AUTO_INCREMENT,
+  `ticket_rule_action_rule_id` int(11) NOT NULL,
+  `ticket_rule_action_type` varchar(50) NOT NULL,
+  `ticket_rule_action_value` varchar(500) NOT NULL,
+  PRIMARY KEY (`ticket_rule_action_id`),
+  KEY `ticket_rule_action_rule_id` (`ticket_rule_action_rule_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `ticket_rule_conditions`
+--
+
+DROP TABLE IF EXISTS `ticket_rule_conditions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `ticket_rule_conditions` (
+  `ticket_rule_condition_id` int(11) NOT NULL AUTO_INCREMENT,
+  `ticket_rule_condition_rule_id` int(11) NOT NULL,
+  `ticket_rule_condition_field` varchar(50) NOT NULL,
+  `ticket_rule_condition_operator` varchar(20) NOT NULL,
+  `ticket_rule_condition_value` varchar(500) NOT NULL,
+  PRIMARY KEY (`ticket_rule_condition_id`),
+  KEY `ticket_rule_condition_rule_id` (`ticket_rule_condition_rule_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `ticket_rules`
+--
+
+DROP TABLE IF EXISTS `ticket_rules`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `ticket_rules` (
+  `ticket_rule_id` int(11) NOT NULL AUTO_INCREMENT,
+  `ticket_rule_name` varchar(200) NOT NULL,
+  `ticket_rule_match_type` enum('all','any') NOT NULL DEFAULT 'all',
+  `ticket_rule_stop_processing` tinyint(1) NOT NULL DEFAULT 1,
+  `ticket_rule_order` int(11) NOT NULL DEFAULT 0,
+  `ticket_rule_active` tinyint(1) NOT NULL DEFAULT 1,
+  `ticket_rule_created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `ticket_rule_archived_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`ticket_rule_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `ticket_statuses`
 --
 
