@@ -50,12 +50,9 @@ header("X-Frame-Options: DENY");
     <link rel="preload" as="script" href="/libs/tom-select/js/tom-select.complete.min.js">
     <link rel="preload" as="script" href="/js/tom_select.js">
 
-    <?php /* Critical-path CSS: reproduces just enough of adminlte.min.css's .app-wrapper
-             grid to lay out the header/sidebar correctly at first paint. adminlte.min.css
-             is ~580KB and render-blocking (see the dark-mode-flash comment above) - until
-             it finishes loading, .app-wrapper has no display:grid, so the header and
-             sidebar fall back to plain block flow and stack full-width in DOM order. Values
-             mirror adminlte.min.css exactly, so nothing visibly changes once it applies. */ ?>
+    <?php /* app-wrapper's grid only exists in adminlte.min.css (580KB). Slow load = paint
+             before it lands = sidebar and header stack full-width in DOM order. Reproduce
+             the grid here so it's never wrong, even for a moment. */ ?>
     <style>
         .app-wrapper{display:grid;grid-template-areas:"lte-app-sidebar lte-app-header" "lte-app-sidebar lte-app-main" "lte-app-sidebar lte-app-footer";grid-template-rows:min-content 1fr min-content;grid-template-columns:auto 1fr;min-height:100vh}
         .app-header{grid-area:lte-app-header}
