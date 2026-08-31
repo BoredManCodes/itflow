@@ -742,21 +742,27 @@ if (isset($_GET['ticket_id'])) {
                                          * Names only - the body is fetched when one is picked, so a
                                          * shelf of long responses does not ride along with every ticket.
                                          */
-                                        $sql_canned_responses = mysqli_query($mysqli, "SELECT canned_response_id, canned_response_name, canned_response_category_id
-                                            FROM canned_responses
-                                            WHERE canned_response_archived_at IS NULL
-                                            AND (canned_response_category_id = 0 OR canned_response_category_id = $ticket_category)
-                                            ORDER BY canned_response_name ASC");
-
                                         $canned_responses_for_category = [];
                                         $canned_responses_general = [];
 
-                                        while ($canned_row = mysqli_fetch_assoc($sql_canned_responses)) {
-                                            if (intval($canned_row['canned_response_category_id']) === 0) {
-                                                $canned_responses_general[] = $canned_row;
-                                            } else {
-                                                $canned_responses_for_category[] = $canned_row;
+                                        // Canned responses are a convenience on top of replying, not a
+                                        // dependency of it - a broken or missing table here must not take
+                                        // the whole reply composer (and everything below it) down with it.
+                                        try {
+                                            $sql_canned_responses = mysqli_query($mysqli, "SELECT canned_response_id, canned_response_name, canned_response_category_id
+                                                FROM canned_responses
+                                                WHERE canned_response_archived_at IS NULL
+                                                AND (canned_response_category_id = 0 OR canned_response_category_id = $ticket_category)
+                                                ORDER BY canned_response_name ASC");
+
+                                            while ($canned_row = mysqli_fetch_assoc($sql_canned_responses)) {
+                                                if (intval($canned_row['canned_response_category_id']) === 0) {
+                                                    $canned_responses_general[] = $canned_row;
+                                                } else {
+                                                    $canned_responses_for_category[] = $canned_row;
+                                                }
                                             }
+                                        } catch (mysqli_sql_exception $e) {
                                         }
 
                                         if ($canned_responses_for_category || $canned_responses_general) { ?>
