@@ -48,17 +48,22 @@ window.ItflowNotify = (function () {
                 return;
             }
             var json = subscription.toJSON();
-            jQuery.post("/agent/ajax.php", {
+            itflowPost("/agent/ajax.php", {
                 save_push_subscription: true,
                 endpoint: json.endpoint,
                 p256dh: json.keys.p256dh,
                 auth: json.keys.auth,
-                csrf_token: jQuery('input[name="csrf_token"]').val()
+                csrf_token: csrfToken()
             });
         }).catch(function () {
             // Push subscription is a bonus on top of the polling below - if it
             // fails (blocked, unsupported, etc.) there's nothing more to do here
         });
+    }
+
+    function csrfToken() {
+        var input = document.querySelector('input[name="csrf_token"]');
+        return input ? input.value : '';
     }
 
     function getLastId() {
@@ -72,7 +77,14 @@ window.ItflowNotify = (function () {
     // First time this browser has checked for this user - baseline on whatever
     // is already unread so we don't fire a wall of popups for old notifications
     function baseline() {
-        jQuery.get("/agent/ajax.php", { get_new_notifications: true, since_id: 0 }, function (items) {
+        itflowGet("/agent/ajax.php", { get_new_notifications: true, since_id: 0 }, function (data) {
+            var items;
+            try {
+                items = JSON.parse(data);
+            } catch (e) {
+                return;
+            }
+
             var maxId = 0;
             (items || []).forEach(function (item) {
                 if (item.id > maxId) {
@@ -80,7 +92,7 @@ window.ItflowNotify = (function () {
                 }
             });
             setLastId(maxId);
-        }, "json");
+        });
     }
 
     function showNotifications(items) {
@@ -121,7 +133,14 @@ window.ItflowNotify = (function () {
             return;
         }
 
-        jQuery.get("/agent/ajax.php", { get_new_notifications: true, since_id: getLastId() }, function (items) {
+        itflowGet("/agent/ajax.php", { get_new_notifications: true, since_id: getLastId() }, function (data) {
+            var items;
+            try {
+                items = JSON.parse(data);
+            } catch (e) {
+                return;
+            }
+
             if (!items || !items.length) {
                 return;
             }
@@ -135,7 +154,7 @@ window.ItflowNotify = (function () {
                 }
             });
             setLastId(maxId);
-        }, "json");
+        });
     }
 
     function start() {
@@ -180,14 +199,14 @@ window.ItflowNotify = (function () {
         }
 
         function fireTest() {
-            jQuery.post("/agent/ajax.php", {
+            itflowPost("/agent/ajax.php", {
                 send_test_browser_notification: true,
-                csrf_token: jQuery('input[name="csrf_token"]').val()
+                csrf_token: csrfToken()
             }, function () {
                 start(); // no-op if already running
                 poll();  // don't wait for the interval
                 callback("granted");
-            }, "json");
+            });
         }
 
         if (Notification.permission === "granted") {
