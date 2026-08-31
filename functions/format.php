@@ -81,8 +81,18 @@ function truncate($text, $chars) {
  * Pass false where the output feeds a form INPUT - intl-tel-input runs in
  * separateDialCode mode, so its dropdown owns the code and the field must hold
  * the national number alone. Those are the only call sites that should.
+ *
+ * $show_country_code left at its null default falls back to the company's
+ * Localization setting (config_phone_show_country_code); pass true/false
+ * explicitly to override it for a specific call site.
  */
-function formatPhoneNumber($phoneNumber, $country_code = '', $show_country_code = true) {
+function formatPhoneNumber($phoneNumber, $country_code = '', $show_country_code = null) {
+    global $config_phone_show_country_code, $config_phone_mask;
+
+    if ($show_country_code === null) {
+        $show_country_code = $config_phone_show_country_code ?? true;
+    }
+
     // Remove all non-digit characters
     $digits = preg_replace('/\D/', '', $phoneNumber ?? '');
     $formatted = '';
@@ -90,6 +100,19 @@ function formatPhoneNumber($phoneNumber, $country_code = '', $show_country_code 
     // If no digits at all, fallback early
     if (strlen($digits) === 0) {
         return $phoneNumber;
+    }
+
+    // A company-wide mask (Settings > Localization) overrides the built-in
+    // per-country formatting below - '#' is a digit placeholder, everything
+    // else is literal. Only applied when the digit count matches the mask
+    // exactly, same rule the per-country cases below already follow.
+    if (!empty($config_phone_mask) && substr_count($config_phone_mask, '#') === strlen($digits)) {
+        $masked = '';
+        $pos = 0;
+        foreach (str_split($config_phone_mask) as $char) {
+            $masked .= $char === '#' ? $digits[$pos++] : $char;
+        }
+        return $show_country_code && $country_code ? "+$country_code $masked" : $masked;
     }
 
     // Helper function to safely check the first digit

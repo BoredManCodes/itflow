@@ -2,11 +2,13 @@
 require_once "includes/inc_all_admin.php";
 
 
-$sql = mysqli_query($mysqli,"SELECT company_currency, company_locale FROM companies, settings WHERE companies.company_id = settings.company_id AND companies.company_id = 1");
+$sql = mysqli_query($mysqli,"SELECT company_currency, company_locale, config_phone_show_country_code, config_phone_mask FROM companies, settings WHERE companies.company_id = settings.company_id AND companies.company_id = 1");
 
 $row = mysqli_fetch_assoc($sql);
 $company_locale = escapeHtml($row['company_locale']);
 $company_currency = escapeHtml($row['company_currency']);
+$config_phone_show_country_code = (bool) $row['config_phone_show_country_code'];
+$config_phone_mask = escapeHtml($row['config_phone_mask']);
 
 // Get a list of all available timezones
 $timezones = DateTimeZone::listIdentifiers();
@@ -61,6 +63,20 @@ $timezones = DateTimeZone::listIdentifiers();
                 </div>
 
                 <hr>
+
+                <div class="mb-3">
+                    <label>Phone Number Format</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fa fa-fw fa-phone"></i></span>
+                        <input type="text" class="form-control" name="phone_mask" maxlength="30" placeholder="e.g. (###) ###-####" value="<?= $config_phone_mask ?>">
+                    </div>
+                    <small class="text-muted">Optional. Use <code>#</code> for each digit, e.g. <code>(###) ###-####</code>. Only applied when a number's digit count matches the mask - leave blank to auto-format by country instead.</small>
+                </div>
+
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="phone_show_country_code" name="phone_show_country_code" value="1" <?php if ($config_phone_show_country_code) { echo "checked"; } ?>>
+                    <label class="form-check-label" for="phone_show_country_code">Show country code prefix on phone numbers (e.g. +61)</label>
+                </div>
 
                 <button type="submit" name="edit_localization" class="btn btn-primary text-bold"><i class="fas fa-check me-2"></i>Save</button>
 

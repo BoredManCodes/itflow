@@ -32,7 +32,8 @@ $sql_settings = mysqli_query($mysqli, "SELECT config_azure_client_id, config_azu
     config_ticket_from_name, config_ticket_moving_columns,
     config_ticket_auto_assign_user_id, config_ticket_new_ticket_notification_email, config_ticket_next_number,
     config_ticket_ordering, config_ticket_prefix, config_ticket_timer_autostart,
-    config_timezone, config_update_last_notified_version, config_update_notification_email,
+    config_timezone, config_phone_show_country_code, config_phone_mask,
+    config_update_last_notified_version, config_update_notification_email,
     config_whitelabel_enabled, config_whitelabel_key,
     config_vapid_public_key, config_vapid_private_key, config_vapid_subject FROM settings WHERE company_id = 1");
 $row = mysqli_fetch_assoc($sql_settings);
@@ -154,6 +155,8 @@ $config_log_retention = intval($row['config_log_retention']);
 // Locale
 $config_currency_format = "US_en";
 $config_timezone = $row['config_timezone'];
+$config_phone_show_country_code = (bool) $row['config_phone_show_country_code'];
+$config_phone_mask = $row['config_phone_mask'];
 $config_date_format = "M d, Y";
 $config_time_format = "g:i A";
 

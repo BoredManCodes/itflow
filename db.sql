@@ -2407,6 +2407,8 @@ CREATE TABLE `settings` (
   `config_vapid_subject` varchar(255) DEFAULT NULL,
   `config_telemetry` tinyint(1) DEFAULT 0,
   `config_timezone` varchar(200) NOT NULL DEFAULT 'America/New_York',
+  `config_phone_show_country_code` tinyint(1) NOT NULL DEFAULT 1,
+  `config_phone_mask` varchar(30) NOT NULL DEFAULT '',
   `config_business_days` varchar(20) NOT NULL DEFAULT '1,2,3,4,5',
   `config_business_hours_start` time NOT NULL DEFAULT '09:00:00',
   `config_business_hours_end` time NOT NULL DEFAULT '17:00:00',
