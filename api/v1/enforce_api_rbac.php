@@ -121,6 +121,8 @@ $resource_module = [
     'quotes'        => 'module_sales',
     'products'      => 'module_sales',
     'expenses'      => 'module_financial',
+    'accounts'      => 'module_financial',
+    'categories'    => 'module_financial',
     'credentials'   => 'module_credential',
 ];
 
