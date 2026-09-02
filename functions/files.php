@@ -48,6 +48,34 @@ function mkdirMissing($dir) {
     }
 }
 
+// Decode and store a base64 file payload under $baseFsPath with an unguessable
+// name. API create endpoints only ever see a JSON body (validate_api_key.php
+// replaces $_POST with the decoded JSON), so $_FILES/checkFileUpload() never
+// populate there - this is the base64 equivalent for that path.
+function saveBase64File(string $base64, string $original_filename, string $baseFsPath, array $allowed_extensions) {
+    $extension = strtolower(pathinfo($original_filename, PATHINFO_EXTENSION));
+    if ($extension === '' || !in_array($extension, $allowed_extensions, true)) {
+        return false;
+    }
+
+    $binary = base64_decode($base64, true);
+    if ($binary === false) {
+        return false;
+    }
+
+    $size = strlen($binary);
+    if ($size <= 0 || $size > 500 * 1024 * 1024) {
+        return false;
+    }
+
+    $new_file_name = randomString(32) . '.' . $extension;
+    if (file_put_contents(rtrim($baseFsPath, '/\\') . '/' . $new_file_name, $binary) === false) {
+        return false;
+    }
+
+    return $new_file_name;
+}
+
 function saveBase64Images(string $html, string $baseFsPath, string $baseWebPath, int $ownerId): string {
     // Normalize paths
     $baseFsPath  = rtrim($baseFsPath, '/\\') . '/';
