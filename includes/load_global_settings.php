@@ -182,6 +182,9 @@ $config_update_last_notified_version = $row['config_update_last_notified_version
 $config_vapid_public_key = $row['config_vapid_public_key'];
 $config_vapid_private_key = $row['config_vapid_private_key'];
 $config_vapid_subject = $row['config_vapid_subject'];
+// Defines ensureVapidKeys(). Loaded here rather than relying on the caller
+// having pulled in functions.php first: index.php does not.
+require_once __DIR__ . '/../functions/push.php';
 ensureVapidKeys();
 
 
