@@ -12,6 +12,7 @@ if (isset($_POST['add_payment_provider'])) {
 
     $provider = escapeSql($_POST['provider']);
     $public_key = escapeSql($_POST['public_key']);
+    $location_id = escapeSql($_POST['location_id'] ?? '');
     $private_key = escapeSql($_POST['private_key']);
     $threshold = floatval($_POST['threshold']);
     $account = intval($_POST['account']);
@@ -25,7 +26,7 @@ if (isset($_POST['add_payment_provider'])) {
         redirect();
     }
 
-    mysqli_query($mysqli,"INSERT INTO payment_providers SET payment_provider_name = '$provider', payment_provider_public_key = '$public_key', payment_provider_private_key = '$private_key', payment_provider_threshold = $threshold, payment_provider_account = $account, payment_provider_expense_vendor = $expense_vendor, payment_provider_expense_category = $expense_category");
+    mysqli_query($mysqli,"INSERT INTO payment_providers SET payment_provider_name = '$provider', payment_provider_public_key = '$public_key', payment_provider_location_id = '$location_id', payment_provider_private_key = '$private_key', payment_provider_threshold = $threshold, payment_provider_account = $account, payment_provider_expense_vendor = $expense_vendor, payment_provider_expense_category = $expense_category");
 
     $provider_id = mysqli_insert_id($mysqli);
 
@@ -44,13 +45,14 @@ if (isset($_POST['edit_payment_provider'])) {
     $provider_id = intval($_POST['provider_id']);
     $description = escapeSql($_POST['description']);
     $public_key = escapeSql($_POST['public_key']);
+    $location_id = escapeSql($_POST['location_id'] ?? '');
     $private_key = escapeSql($_POST['private_key']);
     $threshold = floatval($_POST['threshold']);
     $account = intval($_POST['account']);
     $expense_vendor = intval($_POST['expense_vendor']) ?? 0;
     $expense_category = intval($_POST['expense_category']) ?? 0;
 
-    mysqli_query($mysqli,"UPDATE payment_providers SET payment_provider_public_key = '$public_key', payment_provider_private_key = '$private_key', payment_provider_threshold = $threshold, payment_provider_account = $account, payment_provider_expense_vendor = $expense_vendor, payment_provider_expense_category = $expense_category WHERE payment_provider_id = $provider_id");
+    mysqli_query($mysqli,"UPDATE payment_providers SET payment_provider_public_key = '$public_key', payment_provider_location_id = '$location_id', payment_provider_private_key = '$private_key', payment_provider_threshold = $threshold, payment_provider_account = $account, payment_provider_expense_vendor = $expense_vendor, payment_provider_expense_category = $expense_category WHERE payment_provider_id = $provider_id");
 
     logAudit("Payment Provider", "Edit", "$session_name edited Payment Provider $provider");
 

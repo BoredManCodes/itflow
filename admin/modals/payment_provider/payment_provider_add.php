@@ -33,27 +33,67 @@ ob_start();
                     <label>Provider <strong class="text-danger">*</strong></label>
                     <div class="input-group">
                             <span class="input-group-text"><i class="fa fa-fw fa-credit-card"></i></span>
-                        <select class="form-select select2" name="provider">
+                        <select class="form-select select2" name="provider" id="paymentProviderSelect">
                             <option>Stripe</option>
+                            <option>Square</option>
                         </select>
                     </div>
                 </div>
 
                 <div class="mb-3">
-                    <label>Publishable key <strong class="text-danger">*</strong></label>
+                    <label id="paymentProviderPublicKeyLabel">Publishable key <strong class="text-danger">*</strong></label>
                     <div class="input-group">
                             <span class="input-group-text"><i class="fa fa-fw fa-eye"></i></span>
-                        <input type="text" class="form-control" name="public_key" placeholder="Publishable API Key (pk_...)" maxlength="250">
+                        <input type="text" class="form-control" name="public_key" id="paymentProviderPublicKey" placeholder="Publishable API Key (pk_...)" maxlength="250">
                     </div>
                 </div>
 
+                <div class="mb-3" id="paymentProviderLocationIdGroup" hidden>
+                    <label>Location ID <strong class="text-danger">*</strong></label>
+                    <div class="input-group">
+                            <span class="input-group-text"><i class="fa fa-fw fa-map-marker-alt"></i></span>
+                        <input type="text" class="form-control" name="location_id" placeholder="Location ID" maxlength="200">
+                    </div>
+                    <small class="form-text text-muted">Square Location the payment should be recorded against</small>
+                </div>
+
                 <div class="mb-3">
-                    <label>Secret key <strong class="text-danger">*</strong></label>
+                    <label id="paymentProviderPrivateKeyLabel">Secret key <strong class="text-danger">*</strong></label>
                     <div class="input-group">
                             <span class="input-group-text"><i class="fa fa-fw fa-key"></i></span>
-                        <input type="text" class="form-control" name="private_key" placeholder="Secret API Key (sk_...)" maxlength="250">
+                        <input type="text" class="form-control" name="private_key" id="paymentProviderPrivateKey" placeholder="Secret API Key (sk_...)" maxlength="250">
                     </div>
                 </div>
+
+                <script>
+                (function () {
+                    const select = document.getElementById('paymentProviderSelect');
+                    const locationGroup = document.getElementById('paymentProviderLocationIdGroup');
+                    const publicKeyLabel = document.getElementById('paymentProviderPublicKeyLabel');
+                    const publicKeyInput = document.getElementById('paymentProviderPublicKey');
+                    const privateKeyLabel = document.getElementById('paymentProviderPrivateKeyLabel');
+                    const privateKeyInput = document.getElementById('paymentProviderPrivateKey');
+
+                    function applyProviderFields() {
+                        if (select.value === 'Square') {
+                            locationGroup.hidden = false;
+                            publicKeyLabel.innerHTML = 'Application ID <strong class="text-danger">*</strong>';
+                            publicKeyInput.placeholder = 'Application ID (sandbox-sq0idb-... or sq0idp-...)';
+                            privateKeyLabel.innerHTML = 'Access token <strong class="text-danger">*</strong>';
+                            privateKeyInput.placeholder = 'Access Token (EAAA...)';
+                        } else {
+                            locationGroup.hidden = true;
+                            publicKeyLabel.innerHTML = 'Publishable key <strong class="text-danger">*</strong>';
+                            publicKeyInput.placeholder = 'Publishable API Key (pk_...)';
+                            privateKeyLabel.innerHTML = 'Secret key <strong class="text-danger">*</strong>';
+                            privateKeyInput.placeholder = 'Secret API Key (sk_...)';
+                        }
+                    }
+
+                    select.addEventListener('change', applyProviderFields);
+                    applyProviderFields();
+                })();
+                </script>
 
                 <div class="mb-3">
                     <label>Income / Expense Account <strong class="text-danger">*</strong></label>

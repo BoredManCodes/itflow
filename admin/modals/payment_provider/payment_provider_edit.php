@@ -5,17 +5,20 @@ require_once '../../includes/modal_header.php';
 $provider_id = intval($_GET['id']);
 
 $sql = mysqli_query($mysqli, "SELECT payment_provider_account, payment_provider_expense_category,
-    payment_provider_expense_vendor, payment_provider_name, payment_provider_private_key,
-    payment_provider_public_key, payment_provider_threshold FROM payment_providers WHERE payment_provider_id = $provider_id LIMIT 1");
+    payment_provider_expense_vendor, payment_provider_location_id, payment_provider_name,
+    payment_provider_private_key, payment_provider_public_key, payment_provider_threshold
+    FROM payment_providers WHERE payment_provider_id = $provider_id LIMIT 1");
 
 $row = mysqli_fetch_assoc($sql);
 $provider_name = escapeHtml($row['payment_provider_name']);
 $public_key = escapeHtml($row['payment_provider_public_key']);
+$location_id = escapeHtml($row['payment_provider_location_id']);
 $private_key = escapeHtml($row['payment_provider_private_key']);
 $account_id = intval($row['payment_provider_account']);
 $threshold = floatval($row['payment_provider_threshold']);
 $vendor_id = intval($row['payment_provider_expense_vendor']);
 $category_id = intval($row['payment_provider_expense_category']);
+$is_square = $provider_name === 'Square';
 
 ob_start();
 
@@ -47,18 +50,29 @@ ob_start();
             <div class="tab-pane fade show active" id="pills-details">
 
                 <div class="mb-3">
-                    <label>Publishable key <strong class="text-danger">*</strong></label>
+                    <label><?= $is_square ? 'Application ID' : 'Publishable key' ?> <strong class="text-danger">*</strong></label>
                     <div class="input-group">
                             <span class="input-group-text"><i class="fa fa-fw fa-eye"></i></span>
-                        <input type="text" class="form-control" name="public_key" placeholder="Publishable API Key (pk_...)" maxlength="250" value="<?= $public_key ?>">
+                        <input type="text" class="form-control" name="public_key" placeholder="<?= $is_square ? 'Application ID (sandbox-sq0idb-... or sq0idp-...)' : 'Publishable API Key (pk_...)' ?>" maxlength="250" value="<?= $public_key ?>">
                     </div>
                 </div>
 
+                <?php if ($is_square) { ?>
                 <div class="mb-3">
-                    <label>Secret key <strong class="text-danger">*</strong></label>
+                    <label>Location ID <strong class="text-danger">*</strong></label>
+                    <div class="input-group">
+                            <span class="input-group-text"><i class="fa fa-fw fa-map-marker-alt"></i></span>
+                        <input type="text" class="form-control" name="location_id" placeholder="Location ID" maxlength="200" value="<?= $location_id ?>">
+                    </div>
+                    <small class="form-text text-muted">Square Location the payment should be recorded against</small>
+                </div>
+                <?php } ?>
+
+                <div class="mb-3">
+                    <label><?= $is_square ? 'Access token' : 'Secret key' ?> <strong class="text-danger">*</strong></label>
                     <div class="input-group">
                             <span class="input-group-text"><i class="fa fa-fw fa-key"></i></span>
-                        <input type="text" class="form-control" name="private_key" placeholder="Secret API Key (sk_...)" maxlength="250" value="<?= $private_key ?>">
+                        <input type="text" class="form-control" name="private_key" placeholder="<?= $is_square ? 'Access Token (EAAA...)' : 'Secret API Key (sk_...)' ?>" maxlength="250" value="<?= $private_key ?>">
                     </div>
                 </div>
 

@@ -1660,6 +1660,7 @@ CREATE TABLE `payment_providers` (
   `payment_provider_name` varchar(200) NOT NULL,
   `payment_provider_description` varchar(250) DEFAULT NULL,
   `payment_provider_public_key` varchar(250) DEFAULT NULL,
+  `payment_provider_location_id` varchar(200) DEFAULT NULL,
   `payment_provider_private_key` varchar(250) DEFAULT NULL,
   `payment_provider_threshold` decimal(15,2) DEFAULT NULL,
   `payment_provider_active` tinyint(1) NOT NULL DEFAULT 1,

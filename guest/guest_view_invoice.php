@@ -190,7 +190,8 @@ if ($balance > 0) {
                             $payment_provider_threshold > $invoice_amount
                         )
                     ){ ?>
-                        <a class="btn btn-success" href="guest_pay_invoice_stripe.php?invoice_id=<?= $invoice_id ?>&url_key=<?= $url_key ?>"><i class="fa fa-fw fa-credit-card me-2"></i>Pay Now </a>
+                        <?php $guest_pay_url = $payment_provider_name === 'Square' ? 'guest_pay_invoice_square.php' : 'guest_pay_invoice_stripe.php'; ?>
+                        <a class="btn btn-success" href="<?= $guest_pay_url ?>?invoice_id=<?= $invoice_id ?>&url_key=<?= $url_key ?>"><i class="fa fa-fw fa-credit-card me-2"></i>Pay Now </a>
                     <?php } ?>
                 </div>
             </div>
