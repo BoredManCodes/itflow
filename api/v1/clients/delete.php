@@ -8,7 +8,7 @@ require_once '../require_post_method.php';
 $delete_count = false;
 
 if (!empty($client_id)) {
-    $row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT client_name FROM clients WHERE client_id = $client_id LIMIT 1"));
+    $row = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT client_name FROM clients WHERE client_id = $client_id AND client_archived_at IS NOT NULL LIMIT 1"));
     $client_name = $row['client_name'];
 
     if (!empty($client_name)) {
