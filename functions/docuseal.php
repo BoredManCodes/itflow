@@ -28,6 +28,13 @@ function docusealCreateSubmission($template_id, $submitters, $metadata = []) {
     $data = [
         'template_id' => intval($template_id),
         'submitters' => $submitters,
+        // DocuSeal's default 'preserved' order sends each submitter's invite only
+        // after the one before them completes. Provider is listed first with
+        // send_email=false (they fill in via the dashboard, not an emailed link),
+        // so 'preserved' order would leave the Client submitter waiting forever
+        // on a Provider who was never notified to go first. 'random' lets every
+        // submitter's own send_email flag govern them independently.
+        'order' => 'random',
     ];
 
     if (!empty($metadata)) {
