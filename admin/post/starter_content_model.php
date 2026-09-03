@@ -1039,6 +1039,7 @@ function starterContentVendorTemplates() {
         ['Zoom', 'Video conferencing and collaboration', 'https://zoom.us'],
         ['RingCentral', 'Hosted voice and unified communications', 'https://www.ringcentral.com'],
         ['Stripe', 'Card and online payment processing', 'https://stripe.com'],
+        ['Square', 'Card and online payment processing', 'https://squareup.com'],
     ];
 
     return $vendor_templates;

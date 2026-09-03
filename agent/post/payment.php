@@ -403,11 +403,13 @@ if (isset($_POST['add_payment_stripe'])) {
 
     // Get Client Payment Details
     $sql = mysqli_query($mysqli, "SELECT payment_provider_account, payment_provider_client, payment_provider_private_key,
-        payment_provider_public_key, saved_payment_description, saved_payment_provider_method FROM client_saved_payment_methods LEFT JOIN payment_providers ON saved_payment_provider_id = payment_provider_id LEFT JOIN client_payment_provider ON saved_payment_client_id = client_id WHERE saved_payment_id = $saved_payment_id LIMIT 1");
+        payment_provider_public_key, payment_provider_location_id, payment_provider_name, saved_payment_description, saved_payment_provider_method FROM client_saved_payment_methods LEFT JOIN payment_providers ON saved_payment_provider_id = payment_provider_id LEFT JOIN client_payment_provider ON saved_payment_client_id = client_id WHERE saved_payment_id = $saved_payment_id LIMIT 1");
     $row = mysqli_fetch_assoc($sql);
 
     $public_key = escapeSql($row['payment_provider_public_key']);
     $private_key = escapeSql($row['payment_provider_private_key']);
+    $location_id = escapeSql($row['payment_provider_location_id']);
+    $provider_name = escapeSql($row['payment_provider_name']);
     $account_id = intval($row['payment_provider_account']);
     $payment_provider_client = escapeSql($row['payment_provider_client']);
     $saved_payment_method = escapeSql($row['saved_payment_provider_method']);
@@ -415,7 +417,7 @@ if (isset($_POST['add_payment_stripe'])) {
 
     // Sanity checks
     if (!$payment_provider_client || !$saved_payment_method) {
-        flashAlert("Stripe not enabled or no client card saved", 'error');
+        flashAlert("Payment provider not enabled or no client card saved", 'error');
         redirect();
     } elseif ($invoice_status !== 'Sent' && $invoice_status !== 'Viewed') {
         flashAlert("Invalid invoice state (draft/partial/paid/not billable)", 'error');
@@ -425,51 +427,94 @@ if (isset($_POST['add_payment_stripe'])) {
         redirect();
     }
 
-    // Initialize Stripe
-    require_once __DIR__ . '/../../includes/stripe_init.php';
-    $stripe = new \Stripe\StripeClient($private_key);
-
     $balance_to_pay = round($invoice_amount, 2);
-    $pi_description = "ITFlow: $client_name payment of $invoice_currency_code $balance_to_pay for $invoice_prefix$invoice_number";
+    $payment_succeeded = false;
 
-    // Create a payment intent
-    try {
-        $payment_intent = $stripe->paymentIntents->create([
-            'amount' => intval($balance_to_pay * 100), // Times by 100 as Stripe expects values in cents
-            'currency' => $invoice_currency_code,
-            'customer' => $payment_provider_client,
-            'payment_method' => $saved_payment_method,
-            'off_session' => true,
-            'confirm' => true,
-            'description' => $pi_description,
-            'metadata' => [
-                'itflow_client_id' => $client_id,
-                'itflow_client_name' => $client_name,
-                'itflow_invoice_number' => $invoice_prefix . $invoice_number,
-                'itflow_invoice_id' => $invoice_id,
-            ]
-        ]);
+    if ($provider_name === 'Stripe') {
 
-        // Get details from PI
-        $pi_id = escapeSql($payment_intent->id);
-        $pi_date = date('Y-m-d', $payment_intent->created);
-        $pi_amount_paid = floatval(($payment_intent->amount_received / 100));
-        $pi_currency = strtoupper(escapeSql($payment_intent->currency));
-        $pi_livemode = $payment_intent->livemode;
+        require_once __DIR__ . '/../../includes/stripe_init.php';
+        $stripe = new \Stripe\StripeClient($private_key);
 
-    } catch (Exception $e) {
-        $error = $e->getMessage();
-        error_log("Stripe payment error - encountered exception during payment intent for invoice ID $invoice_id / $invoice_prefix$invoice_number: $error");
-        logApp("Stripe", "error", "Exception during PI for invoice ID $invoice_id: $error");
+        $pi_description = "ITFlow: $client_name payment of $invoice_currency_code $balance_to_pay for $invoice_prefix$invoice_number";
+
+        // Create a payment intent
+        try {
+            $payment_intent = $stripe->paymentIntents->create([
+                'amount' => intval($balance_to_pay * 100), // Times by 100 as Stripe expects values in cents
+                'currency' => $invoice_currency_code,
+                'customer' => $payment_provider_client,
+                'payment_method' => $saved_payment_method,
+                'off_session' => true,
+                'confirm' => true,
+                'description' => $pi_description,
+                'metadata' => [
+                    'itflow_client_id' => $client_id,
+                    'itflow_client_name' => $client_name,
+                    'itflow_invoice_number' => $invoice_prefix . $invoice_number,
+                    'itflow_invoice_id' => $invoice_id,
+                ]
+            ]);
+
+            // Get details from PI
+            $pi_id = escapeSql($payment_intent->id);
+            $pi_date = date('Y-m-d', $payment_intent->created);
+            $pi_amount_paid = floatval(($payment_intent->amount_received / 100));
+            $pi_currency = strtoupper(escapeSql($payment_intent->currency));
+            $pi_livemode = $payment_intent->livemode;
+            $payment_succeeded = ($payment_intent->status == "succeeded" && intval($balance_to_pay * 100) == intval($pi_amount_paid * 100));
+
+        } catch (Exception $e) {
+            $error = $e->getMessage();
+            error_log("Stripe payment error - encountered exception during payment intent for invoice ID $invoice_id / $invoice_prefix$invoice_number: $error");
+            logApp("Stripe", "error", "Exception during PI for invoice ID $invoice_id: $error");
+        }
+
+    } elseif ($provider_name === 'Square') {
+
+        require_once __DIR__ . '/../../includes/square_api.php';
+        $square_sandbox = squareIsSandbox($public_key);
+
+        try {
+            $square_response = squareApiRequest('POST', '/v2/payments', $private_key, $square_sandbox, [
+                'idempotency_key' => bin2hex(random_bytes(16)),
+                'source_id' => $saved_payment_method,
+                'customer_id' => $payment_provider_client,
+                'amount_money' => [
+                    'amount' => (int) round($balance_to_pay * 100),
+                    'currency' => strtoupper($invoice_currency_code),
+                ],
+                'location_id' => $location_id,
+                'note' => "ITFlow: $client_name payment of $invoice_currency_code $balance_to_pay for $invoice_prefix$invoice_number",
+                'reference_id' => (string) $invoice_id,
+            ]);
+
+            $square_payment = $square_response['payment'] ?? null;
+
+            $pi_id = escapeSql($square_payment['id'] ?? '');
+            $pi_date = date('Y-m-d');
+            $pi_amount_paid = floatval(($square_payment['amount_money']['amount'] ?? 0) / 100);
+            $pi_currency = strtoupper(escapeSql($square_payment['amount_money']['currency'] ?? $invoice_currency_code));
+            $pi_livemode = !$square_sandbox;
+            $payment_succeeded = ($square_payment && $square_payment['status'] === 'COMPLETED' && (int) round($balance_to_pay * 100) === (int) round($pi_amount_paid * 100));
+
+        } catch (Exception $e) {
+            $error = $e->getMessage();
+            error_log("Square payment error - encountered exception during payment create for invoice ID $invoice_id / $invoice_prefix$invoice_number: $error");
+            logApp("Square", "error", "Exception during payment create for invoice ID $invoice_id: $error");
+        }
+
+    } else {
+        flashAlert("Unsupported payment provider", 'error');
+        redirect();
     }
 
-    if ($payment_intent->status == "succeeded" && intval($balance_to_pay) == intval($pi_amount_paid)) {
+    if ($payment_succeeded) {
 
         // Update Invoice Status
         mysqli_query($mysqli, "UPDATE invoices SET invoice_status = 'Paid' WHERE invoice_id = $invoice_id");
 
         // Add Payment to History
-        mysqli_query($mysqli, "INSERT INTO payments SET payment_date = '$pi_date', payment_amount = $pi_amount_paid, payment_currency_code = '$pi_currency', payment_account_id = $account_id, payment_method = 'Stripe', payment_reference = 'Stripe - $pi_id', payment_invoice_id = $invoice_id");
+        mysqli_query($mysqli, "INSERT INTO payments SET payment_date = '$pi_date', payment_amount = $pi_amount_paid, payment_currency_code = '$pi_currency', payment_account_id = $account_id, payment_method = '$provider_name', payment_reference = '$provider_name - $pi_id', payment_invoice_id = $invoice_id");
         mysqli_query($mysqli, "INSERT INTO history SET history_status = 'Paid', history_description = 'Online Payment added (agent)', history_invoice_id = $invoice_id");
 
         // Email receipt
@@ -537,7 +582,7 @@ if (isset($_POST['add_payment_stripe'])) {
 
         // Notify/log
         appNotify("Invoice Paid", "Invoice $invoice_prefix$invoice_number automatically paid", "/agent/invoice.php?invoice_id=$invoice_id", $client_id);
-        logAudit("Invoice", "Payment", "$session_name initiated Stripe payment amount of " . numfmt_format_currency($currency_format, $invoice_amount, $invoice_currency_code) . " added to invoice $invoice_prefix$invoice_number - $pi_id $extended_log_desc", $client_id, $invoice_id);
+        logAudit("Invoice", "Payment", "$session_name initiated $provider_name payment amount of " . numfmt_format_currency($currency_format, $invoice_amount, $invoice_currency_code) . " added to invoice $invoice_prefix$invoice_number - $pi_id $extended_log_desc", $client_id, $invoice_id);
         triggerCustomAction('invoice_pay', $invoice_id);
 
         flashAlert("Payment amount <strong>" . numfmt_format_currency($currency_format, $invoice_amount, $invoice_currency_code) . "</strong> added");
@@ -545,9 +590,9 @@ if (isset($_POST['add_payment_stripe'])) {
         redirect();
 
     } else {
-        mysqli_query($mysqli, "INSERT INTO history SET history_status = 'Payment failed', history_description = 'Stripe pay failed due to payment error', history_invoice_id = $invoice_id");
+        mysqli_query($mysqli, "INSERT INTO history SET history_status = 'Payment failed', history_description = '$provider_name pay failed due to payment error', history_invoice_id = $invoice_id");
 
-        logAudit("Invoice", "Payment", "Failed online payment amount of invoice $invoice_prefix$invoice_number due to Stripe payment error", $client_id, $invoice_id);
+        logAudit("Invoice", "Payment", "Failed online payment amount of invoice $invoice_prefix$invoice_number due to $provider_name payment error", $client_id, $invoice_id);
         flashAlert("Payment failed", 'error');
 
         redirect();
@@ -732,8 +777,10 @@ if (isset($_GET['delete_payment'])) {
     logAudit("Invoice", "Edit", "$session_name deleted Payment on Invoice $invoice_prefix$invoice_number", $client_id, $invoice_id);
 
     flashAlert("Payment deleted", 'error');
-    if ($config_stripe_enable) {
-       flashAlert("Payment deleted - Stripe payments must be manually refunded in Stripe", 'error');
+    $active_online_provider = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT payment_provider_name FROM payment_providers WHERE payment_provider_active = 1 LIMIT 1"));
+    if ($active_online_provider) {
+       $active_online_provider_name = escapeHtml($active_online_provider['payment_provider_name']);
+       flashAlert("Payment deleted - $active_online_provider_name payments must be manually refunded in $active_online_provider_name", 'error');
     }
 
     redirect();

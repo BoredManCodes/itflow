@@ -40,7 +40,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
     <li class="breadcrumb-item">
         <a href="payment_providers.php">Payment Providers</a>
     </li>
-    <li class="breadcrumb-item active">Saved Payment Methods (Stripe)</li>
+    <li class="breadcrumb-item active">Saved Payment Methods</li>
 </ol>
 
 <div class="card">

@@ -17,7 +17,8 @@ if (isset($_GET['delete_saved_payment'])) {
             client_saved_payment_methods.saved_payment_description,
             client_payment_provider.payment_provider_client,
             payment_providers.payment_provider_name,
-            payment_providers.payment_provider_private_key
+            payment_providers.payment_provider_private_key,
+            payment_providers.payment_provider_public_key
         FROM client_saved_payment_methods
         LEFT JOIN client_payment_provider
             ON client_payment_provider.client_id = client_saved_payment_methods.saved_payment_client_id
@@ -36,6 +37,7 @@ if (isset($_GET['delete_saved_payment'])) {
     $payment_method = $row['saved_payment_provider_method'];
 
     $private_key = $row['payment_provider_private_key'];
+    $public_key = $row['payment_provider_public_key'] ?? null;
 
     // Separate logic for each Payment Provider
     if ($payment_provider_name == 'Stripe') {
@@ -52,6 +54,17 @@ if (isset($_GET['delete_saved_payment'])) {
             $error = $e->getMessage();
             error_log("Stripe payment error - encountered exception when removing payment method info for $payment_method: $error");
             logApp("Stripe", "error", "Exception removing payment method for $payment_method: $error");
+        }
+
+    } elseif ($payment_provider_name == 'Square') {
+
+        try {
+            require_once '../includes/square_api.php';
+            squareApiRequest('POST', "/v2/cards/$payment_method/disable", $private_key, squareIsSandbox($public_key));
+        } catch (Exception $e) {
+            $error = $e->getMessage();
+            error_log("Square payment error - encountered exception when removing payment method info for $payment_method: $error");
+            logApp("Square", "error", "Exception removing payment method for $payment_method: $error");
         }
 
     }

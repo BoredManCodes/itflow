@@ -18,11 +18,13 @@ $invoices_sql = mysqli_query($mysqli, "SELECT invoice_amount, invoice_date, invo
 
 
 // Payment Provider Active Query
-$sql_payment_provider = mysqli_query($mysqli, "SELECT payment_provider_active, payment_provider_id, payment_provider_threshold FROM payment_providers WHERE payment_provider_active = 1 LIMIT 1;");
+$sql_payment_provider = mysqli_query($mysqli, "SELECT payment_provider_active, payment_provider_id, payment_provider_name, payment_provider_threshold FROM payment_providers WHERE payment_provider_active = 1 LIMIT 1;");
 $row = mysqli_fetch_assoc($sql_payment_provider);
 $payment_provider_id = intval($row['payment_provider_id']);
 $payment_provider_active = intval($row['payment_provider_active']);
 $payment_provider_threshold = floatval($row['payment_provider_threshold']);
+$active_payment_provider_name = escapeHtml($row['payment_provider_name']);
+$guest_pay_url = $active_payment_provider_name === 'Square' ? 'guest_pay_invoice_square.php' : 'guest_pay_invoice_stripe.php';
 
 // Saved Payment Methods
 $sql_saved_payment_methods = mysqli_query($mysqli, "
@@ -155,7 +157,7 @@ $balance = $invoice_amounts - $amount_paid;
                         ){ ?>
                         <button type="button" class="btn btn-sm btn-outline-success dropdown-toggle" data-bs-toggle="dropdown"><i class="fa fa-fw fa-credit-card me-2"></i>Pay</button>
                         <div class="dropdown-menu">
-                            <a class="dropdown-item" href="//<?= $config_base_url ?>/guest/guest_pay_invoice_stripe.php?invoice_id=<?= "$invoice_id&url_key=$invoice_url_key" ?>">Enter Card Manually</a>
+                            <a class="dropdown-item" href="//<?= $config_base_url ?>/guest/<?= $guest_pay_url ?>?invoice_id=<?= "$invoice_id&url_key=$invoice_url_key" ?>">Enter Card Manually</a>
 
                             <?php
                             // Saved Payment Methods
@@ -172,16 +174,7 @@ $balance = $invoice_amounts - $amount_paid;
                             while ($row = mysqli_fetch_assoc($sql_saved_payment_methods)) {
                                 $saved_payment_id = intval($row['saved_payment_id']);
                                 $saved_payment_description = escapeHtml($row['saved_payment_description']);
-                                $payment_icon = "fas fa-credit-card"; // default icon
-                                if (strpos($saved_payment_description, "visa") !== false) {
-                                    $payment_icon = "fab fa-cc-visa";
-                                } elseif (strpos($saved_payment_description, "mastercard") !== false) {
-                                    $payment_icon = "fab fa-cc-mastercard";
-                                } elseif (strpos($saved_payment_description, "american express") !== false || strpos($saved_payment_description, "amex") !== false) {
-                                    $payment_icon = "fab fa-cc-amex";
-                                } elseif (strpos($saved_payment_description, "discover") !== false) {
-                                    $payment_icon = "fab fa-cc-discover";
-                                }
+                                $payment_icon = paymentBrandIcon($saved_payment_description);
                                 $payment_provider_name = escapeHtml($row['payment_provider_name']);
                                 ?>
 

@@ -941,7 +941,7 @@ while ($row = mysqli_fetch_assoc($sql_recurring_payments)) {
 
     // A card that already declined today is not retried - the day-matched selection above
     // would otherwise re-attempt the same charge on every extra run of this script
-    if (cronInvoiceHistoryToday($invoice_id, 'Stripe autopay failed')) {
+    if (cronInvoiceHistoryToday($invoice_id, 'Stripe autopay failed') || cronInvoiceHistoryToday($invoice_id, 'Square autopay failed')) {
         continue;
     }
 
@@ -950,7 +950,8 @@ while ($row = mysqli_fetch_assoc($sql_recurring_payments)) {
         // Get the saved payment method and provider details
         $saved_payment = mysqli_fetch_assoc(mysqli_query($mysqli, "
             SELECT payment_provider_account, payment_provider_id, payment_provider_name,
-                payment_provider_private_key, saved_payment_description, saved_payment_provider_method FROM client_saved_payment_methods
+                payment_provider_private_key, payment_provider_public_key, payment_provider_location_id,
+                saved_payment_description, saved_payment_provider_method FROM client_saved_payment_methods
             LEFT JOIN payment_providers ON saved_payment_provider_id = payment_provider_id
             WHERE saved_payment_id = $recurring_payment_saved_payment_id
               AND saved_payment_client_id = $client_id
@@ -966,11 +967,13 @@ while ($row = mysqli_fetch_assoc($sql_recurring_payments)) {
         $provider_id = intval($saved_payment['payment_provider_id']);
         $provider_name = escapeSql($saved_payment['payment_provider_name']);
         $provider_private_key = $saved_payment['payment_provider_private_key'];
+        $provider_public_key = $saved_payment['payment_provider_public_key'];
+        $provider_location_id = escapeSql($saved_payment['payment_provider_location_id']);
         $account_id = intval($saved_payment['payment_provider_account']);
         $saved_payment_description = escapeSql($saved_payment['saved_payment_description']);
         $stripe_payment_method_id = $saved_payment['saved_payment_provider_method'];
 
-        // NEW: Get the payment_provider_client (Stripe Customer ID) from client_payment_provider
+        // NEW: Get the payment_provider_client (Stripe/Square Customer ID) from client_payment_provider
         $cpp_query = mysqli_query($mysqli, "
             SELECT payment_provider_client FROM client_payment_provider
             WHERE client_id = $client_id
@@ -1092,6 +1095,121 @@ while ($row = mysqli_fetch_assoc($sql_recurring_payments)) {
                 }
             } // End if Stripe creds and IDs
         } // End if Stripe provider
+
+        // Square
+        elseif ($provider_name === "Square") {
+            $square_customer_id = $stripe_customer_id;
+            $square_payment_method_id = $stripe_payment_method_id;
+
+            if ($provider_private_key && $square_customer_id && $square_payment_method_id) {
+                require_once __DIR__ . '/../includes/square_api.php';
+                $square_sandbox = squareIsSandbox($provider_public_key);
+
+                $balance_to_pay = round($invoice_amount, 2);
+
+                try {
+                    $square_response = squareApiRequest('POST', '/v2/payments', $provider_private_key, $square_sandbox, [
+                        'idempotency_key' => bin2hex(random_bytes(16)),
+                        'source_id' => $square_payment_method_id,
+                        'customer_id' => $square_customer_id,
+                        'amount_money' => [
+                            'amount' => (int) round($balance_to_pay * 100),
+                            'currency' => strtoupper($recurring_payment_currency_code),
+                        ],
+                        'location_id' => $provider_location_id,
+                        'note' => "ITFlow: $client_name payment of $recurring_payment_currency_code $balance_to_pay for $invoice_prefix$invoice_number",
+                        'reference_id' => (string) $invoice_id,
+                    ]);
+
+                    $square_payment = $square_response['payment'] ?? null;
+
+                } catch (Exception $e) {
+                    $error = $e->getMessage();
+                    error_log("Square payment error - encountered exception during payment create for invoice ID $invoice_id / $invoice_prefix$invoice_number: $error");
+                    logApp("Square", "error", "Exception during payment create for invoice ID $invoice_id: $error");
+                    mysqli_query($mysqli, "INSERT INTO history SET history_status = 'Payment failed', history_description = 'Square autopay failed due to payment error', history_invoice_id = $invoice_id");
+                    logAudit("Invoice", "Payment", "Failed auto Payment amount of invoice $invoice_prefix$invoice_number due to Square payment error: $error", $client_id, $invoice_id);
+                    continue;
+                }
+
+                $pi_id = escapeSql($square_payment['id'] ?? '');
+                $pi_date = date('Y-m-d');
+                $pi_amount_paid = floatval(($square_payment['amount_money']['amount'] ?? 0) / 100);
+                $pi_currency = strtoupper(escapeSql($square_payment['amount_money']['currency'] ?? $recurring_payment_currency_code));
+                $pi_livemode = !$square_sandbox;
+
+                if ($square_payment && $square_payment['status'] === 'COMPLETED' && (int) round($balance_to_pay * 100) === (int) round($pi_amount_paid * 100)) {
+
+                    // Update Invoice Status
+                    mysqli_query($mysqli, "UPDATE invoices SET invoice_status = 'Paid' WHERE invoice_id = $invoice_id");
+
+                    // Add Payment to History
+                    mysqli_query($mysqli, "INSERT INTO payments SET payment_date = '$pi_date', payment_amount = $pi_amount_paid, payment_currency_code = '$pi_currency', payment_account_id = $account_id, payment_method = 'Square', payment_reference = 'Square - $pi_id', payment_invoice_id = $invoice_id");
+                    mysqli_query($mysqli, "INSERT INTO history SET history_status = 'Paid', history_description = 'Online Payment added (autopay)', history_invoice_id = $invoice_id");
+
+                    // RECEIPT EMAIL
+                    if (!empty($config_smtp_provider)) {
+                        $rendered = renderEmailTemplate('payment_received_online', [
+                            'contact_name' => $contact_name,
+                            'amount' => numfmt_format_currency($currency_format, $invoice_amount, $recurring_payment_currency_code),
+                            'invoice_url' => "https://$config_base_url/guest/guest_view_invoice.php?invoice_id=$invoice_id&url_key=$invoice_url_key",
+                            'invoice_prefix' => $invoice_prefix,
+                            'invoice_number' => $invoice_number,
+                            'company_name' => $company_name,
+                            'company_phone' => $company_phone,
+                            'from_email' => $config_invoice_from_email,
+                        ]);
+                        $subject = $rendered['subject'];
+                        $body = $rendered['body'];
+
+                        $data = [[
+                            'from' => $config_invoice_from_email,
+                            'from_name' => $config_invoice_from_name,
+                            'recipient' => $contact_email,
+                            'recipient_name' => $contact_name,
+                            'subject' => $subject,
+                            'body' => $body,
+                        ]];
+
+                        // Internal notification
+                        if (!empty($config_invoice_paid_notification_email)) {
+                            $rendered_internal = renderEmailTemplate('payment_received_internal', [
+                                'app_name' => $config_app_name,
+                                'client_name' => $client_name,
+                                'invoice_prefix' => $invoice_prefix,
+                                'invoice_number' => $invoice_number,
+                                'client_receipt_body' => $body,
+                            ]);
+                            $subject_int = $rendered_internal['subject'];
+                            $body_int = $rendered_internal['body'];
+                            $data[] = [
+                                'from' => $config_invoice_from_email,
+                                'from_name' => $config_invoice_from_name,
+                                'recipient' => $config_invoice_paid_notification_email,
+                                'recipient_name' => $contact_name,
+                                'subject' => $subject_int,
+                                'body' => $body_int,
+                            ];
+                        }
+                        $mail = addToMailQueue($data);
+                        $email_id = mysqli_insert_id($mysqli);
+                        mysqli_query($mysqli,"INSERT INTO history SET history_status = 'Sent', history_description = 'Payment Receipt sent to mail queue ID: $email_id!', history_invoice_id = $invoice_id");
+                        logAudit("Invoice", "Payment", "Payment receipt for invoice $invoice_prefix$invoice_number queued to $contact_email Email ID: $email_id", $client_id, $invoice_id);
+                    }
+
+                    // LOGGING
+                    $extended_log_desc = !$pi_livemode ? '(DEV MODE)' : '';
+                    appNotify("Invoice Paid", "Invoice $invoice_prefix$invoice_number automatically paid", "/agent/invoice.php?invoice_id=$invoice_id", $client_id);
+                    logAudit("Invoice", "Payment", "Auto Square payment amount of " . numfmt_format_currency($currency_format, $invoice_amount, $recurring_payment_currency_code) . " added to invoice $invoice_prefix$invoice_number - $pi_id $extended_log_desc", $client_id, $invoice_id);
+                    triggerCustomAction('invoice_pay', $invoice_id);
+
+                } else {
+                    $square_status = $square_payment['status'] ?? 'UNKNOWN';
+                    mysqli_query($mysqli, "INSERT INTO history SET history_status = 'Payment failed', history_description = 'Square autopay failed: Status $square_status', history_invoice_id = $invoice_id");
+                    logAudit("Invoice", "Payment", "Failed auto Payment for invoice $invoice_prefix$invoice_number. Square payment status: $square_status", $client_id, $invoice_id);
+                }
+            } // End if Square creds and IDs
+        } // End if Square provider
         // Add other provider logic here as needed
     } else {
         // Handle Non-payment-provider autopay
@@ -1166,6 +1284,73 @@ if ($stripe_provider) {
                     logApp("Stripe", "info", "Fee reconciliation - recorded Stripe fee of $gateway_fee for $pi_id");
                 }
                 // Still-missing balance transactions get picked up on the next run
+            }
+        }
+    }
+}
+
+/*
+ * Square fee reconciliation
+ * Square's processing_fee is sometimes not yet attached to a payment at the moment
+ * it completes. Find recent Square payments with no matching fee expense and record
+ * the actual fee now that the processing_fee has been assessed.
+ */
+$square_provider = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT * FROM payment_providers WHERE payment_provider_name = 'Square' LIMIT 1"));
+
+if ($square_provider) {
+
+    $provider_private_key = $square_provider['payment_provider_private_key'];
+    $provider_public_key = $square_provider['payment_provider_public_key'];
+    $expense_vendor_id = intval($square_provider['payment_provider_expense_vendor']);
+    $expense_category_id = intval($square_provider['payment_provider_expense_category']);
+    $expense_account_id = intval($square_provider['payment_provider_account']);
+
+    if ($provider_private_key && $expense_vendor_id > 0 && $expense_category_id > 0) {
+
+        $sql_missing_fee = mysqli_query($mysqli, "
+            SELECT payment_reference, payment_date, payment_amount, invoice_prefix, invoice_number, invoice_client_id
+            FROM payments
+            LEFT JOIN invoices ON payment_invoice_id = invoice_id
+            WHERE payment_reference LIKE 'Square - %'
+            AND payment_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+            AND NOT EXISTS (
+                SELECT 1 FROM expenses WHERE LOCATE(payments.payment_reference, expenses.expense_reference) = 1
+            )
+            LIMIT 50
+        ");
+
+        if ($sql_missing_fee && mysqli_num_rows($sql_missing_fee) > 0) {
+
+            require_once __DIR__ . '/../includes/square_api.php';
+            $square_sandbox = squareIsSandbox($provider_public_key);
+
+            while ($missing = mysqli_fetch_assoc($sql_missing_fee)) {
+
+                $payment_reference = escapeSql($missing['payment_reference']);
+                $payment_date = escapeSql($missing['payment_date']);
+                $payment_amount = floatval($missing['payment_amount']);
+                $invoice_prefix = escapeSql($missing['invoice_prefix']);
+                $invoice_number = intval($missing['invoice_number']);
+                $client_id = intval($missing['invoice_client_id']);
+
+                $square_payment_id = str_replace('Square - ', '', $missing['payment_reference']);
+
+                try {
+                    $square_response = squareApiRequest('GET', "/v2/payments/$square_payment_id", $provider_private_key, $square_sandbox);
+                } catch (Exception $e) {
+                    logApp("Square", "warning", "Fee reconciliation - could not retrieve $square_payment_id: " . $e->getMessage());
+                    continue;
+                }
+
+                // Actual fee from processing_fee (empty/absent until Square assesses it - retried next run)
+                $processing_fee = $square_response['payment']['processing_fee'][0] ?? null;
+                if ($processing_fee && isset($processing_fee['amount_money'])) {
+                    $gateway_fee = round($processing_fee['amount_money']['amount'] / 100, 2);
+                    $gateway_fee_currency = escapeSql(strtoupper($processing_fee['amount_money']['currency']));
+                    mysqli_query($mysqli, "INSERT INTO expenses SET expense_date = '$payment_date', expense_amount = $gateway_fee, expense_currency_code = '$gateway_fee_currency', expense_account_id = $expense_account_id, expense_vendor_id = $expense_vendor_id, expense_client_id = $client_id, expense_category_id = $expense_category_id, expense_description = 'Square fee for Invoice $invoice_prefix$invoice_number payment of $payment_amount', expense_reference = '$payment_reference'");
+                    logApp("Square", "info", "Fee reconciliation - recorded Square fee of $gateway_fee for $square_payment_id");
+                }
+                // Still-missing processing fees get picked up on the next run
             }
         }
     }

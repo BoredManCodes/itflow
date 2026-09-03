@@ -234,8 +234,8 @@ function emailTemplateDefaults() {
         'payment_method_saved' => [
             'name' => 'Payment Method Saved',
             'subject' => 'Payment method saved',
-            'body' => "Hello {contact_name}<br><br>We're writing to confirm that your payment details have been securely stored with Stripe our trusted payment processor.<br><br>You authorized us to automatically bill your card ({payment_description}) for future invoices.<br><br>You may update or remove your payment method at any time via the client portal.<br><br>Thank you for your business!<br><br>--<br>{company_name} - Billing Department<br>{from_email}<br>{company_phone}",
-            'tokens' => 'contact_name, payment_description, company_name, company_phone, from_email',
+            'body' => "Hello {contact_name}<br><br>We're writing to confirm that your payment details have been securely stored with {provider_name}, our trusted payment processor.<br><br>You authorized us to automatically bill your card ({payment_description}) for future invoices.<br><br>You may update or remove your payment method at any time via the client portal.<br><br>Thank you for your business!<br><br>--<br>{company_name} - Billing Department<br>{from_email}<br>{company_phone}",
+            'tokens' => 'contact_name, payment_description, provider_name, company_name, company_phone, from_email',
         ],
 
         // --- Auth / account ---

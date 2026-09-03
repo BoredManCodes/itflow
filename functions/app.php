@@ -69,6 +69,27 @@ function calculateDiscountAmount($base_amount, $discount_value, $discount_type) 
 }
 
 /*
+ * Font Awesome brand icon class for a card description/brand string, e.g.
+ * "visa - 4242 | Exp 12/2030" or a raw brand like "mastercard". Falls back
+ * to a generic card icon when nothing matches.
+ */
+function paymentBrandIcon($text) {
+    $text = strtolower($text);
+
+    if (strpos($text, "visa") !== false) {
+        return "fab fa-cc-visa";
+    } elseif (strpos($text, "mastercard") !== false) {
+        return "fab fa-cc-mastercard";
+    } elseif (strpos($text, "american express") !== false || strpos($text, "amex") !== false) {
+        return "fab fa-cc-amex";
+    } elseif (strpos($text, "discover") !== false) {
+        return "fab fa-cc-discover";
+    }
+
+    return "fas fa-credit-card";
+}
+
+/*
  * The display name for a ticket status id, RAW. Escaping is the caller's job -
  * same convention as getFieldById() above.
  */

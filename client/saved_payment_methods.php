@@ -1,45 +1,52 @@
 <?php
 /*
- * Client Portal - AutoPay Configuration (multi-provider - assumes Stripe for now)
+ * Client Portal - AutoPay Configuration (Stripe or Square, whichever is active)
  */
 
 require_once "includes/inc_all.php";
+require_once '../includes/square_api.php';
 
 enforceContactCan('accounting');
 
-// Initialize Stripe
-require_once '../includes/stripe_init.php';
-
-// Get Stripe provider info
-$stripe_provider_query = mysqli_query($mysqli, "
-    SELECT payment_provider_id, payment_provider_private_key, payment_provider_public_key FROM payment_providers WHERE payment_provider_name = 'Stripe' LIMIT 1
+// Get the single active payment provider
+$provider_query = mysqli_query($mysqli, "
+    SELECT payment_provider_id, payment_provider_name, payment_provider_private_key, payment_provider_public_key, payment_provider_location_id
+    FROM payment_providers WHERE payment_provider_active = 1 LIMIT 1
 ");
-$stripe_provider = mysqli_fetch_assoc($stripe_provider_query);
+$provider = mysqli_fetch_assoc($provider_query);
 
-if (!$stripe_provider) {
-    echo "Stripe payment error - Stripe provider is not configured.";
+if (!$provider) {
+    echo "Online payment error - no payment provider is configured.";
     include_once 'includes/footer.php';
     exit();
 }
 
-$stripe_provider_id = intval($stripe_provider['payment_provider_id']);
-$stripe_public_key = escapeHtml($stripe_provider['payment_provider_public_key']);
-$stripe_secret_key = escapeHtml($stripe_provider['payment_provider_private_key']);
+$provider_id = intval($provider['payment_provider_id']);
+$provider_name = escapeHtml($provider['payment_provider_name']);
+$public_key = escapeHtml($provider['payment_provider_public_key']);
+$private_key = escapeHtml($provider['payment_provider_private_key']);
+$location_id = escapeHtml($provider['payment_provider_location_id']);
 
-// Get client's Stripe customer ID
-$stripe_customer_query = mysqli_query($mysqli, "
+if (!$public_key || !$private_key) {
+    echo "$provider_name payment error - credentials missing. Please contact support.";
+    include_once 'includes/footer.php';
+    exit();
+}
+
+// Get client's provider customer ID
+$provider_customer_query = mysqli_query($mysqli, "
     SELECT payment_provider_client FROM client_payment_provider
-    WHERE client_id = $session_client_id AND payment_provider_id = $stripe_provider_id
+    WHERE client_id = $session_client_id AND payment_provider_id = $provider_id
     LIMIT 1
 ");
-$stripe_customer = mysqli_fetch_assoc($stripe_customer_query);
-$stripe_customer_id = $stripe_customer ? escapeSql($stripe_customer['payment_provider_client']) : null;
+$provider_customer = mysqli_fetch_assoc($provider_customer_query);
+$provider_customer_id = $provider_customer ? escapeSql($provider_customer['payment_provider_client']) : null;
 
 // Get saved payment methods
 $saved_methods_query = mysqli_query($mysqli, "
     SELECT * FROM client_saved_payment_methods
     WHERE saved_payment_client_id = $session_client_id
-    AND saved_payment_provider_id = $stripe_provider_id
+    AND saved_payment_provider_id = $provider_id
 ");
 
 $saved_methods = [];
@@ -47,12 +54,6 @@ while ($row = mysqli_fetch_assoc($saved_methods_query)) {
     $saved_methods[] = $row;
 }
 
-// Stripe not properly configured
-if (!$stripe_public_key || !$stripe_secret_key) {
-    echo "Stripe payment error - Stripe credentials missing. Please contact support.";
-    include_once 'includes/footer.php';
-    exit();
-}
 ?>
 
 <h3>Saved Payment Methods</h3>
@@ -60,16 +61,16 @@ if (!$stripe_public_key || !$stripe_secret_key) {
 <div class="row">
     <div class="col-md-6">
 
-        <?php if (!$stripe_customer_id) { ?>
-            In order to set up automatic payments, you must create a customer record in Stripe.
-            First, you must authorize Stripe to store your card details for the purpose of automatic payment.
+        <?php if (!$provider_customer_id) { ?>
+            In order to set up automatic payments, you must create a customer record with <?= $provider_name ?>.<br>
+            First, you must authorize <?= $provider_name ?> to store your card details for the purpose of automatic payment.
             <br><br>
 
             <form action="post.php" method="POST">
                 <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
 
                 <div class="mb-3">
-                    <button type="submit" class="btn btn-success" name="create_stripe_customer"><strong><i class="fas fa-check me-2"></i>I grant consent for automatic payments</strong></button>
+                    <button type="submit" class="btn btn-success" name="create_<?= strtolower($provider_name) ?>_customer"><strong><i class="fas fa-check me-2"></i>I grant consent for automatic payments</strong></button>
                 </div>
             </form>
 
@@ -82,37 +83,42 @@ if (!$stripe_public_key || !$stripe_secret_key) {
             <?php } else { ?>
                 <ul class="list-unstyled">
                     <?php
-                    try {
-                        $stripe = new \Stripe\StripeClient($stripe_secret_key);
 
-                        foreach ($saved_methods as $method) {
-                            $stripe_pm_id = $method['saved_payment_provider_method'];
-                            $description = escapeHtml($method['saved_payment_description']);
-                            $payment_icon = "fas fa-credit-card"; // default icon
-                            if (strpos($description, "visa") !== false) {
-                                $payment_icon = "fab fa-cc-visa";
-                            } elseif (strpos($description, "mastercard") !== false) {
-                                $payment_icon = "fab fa-cc-mastercard";
-                            } elseif (strpos($description, "american express") !== false || strpos($description, "amex") !== false) {
-                                $payment_icon = "fab fa-cc-amex";
-                            } elseif (strpos($description, "discover") !== false) {
-                                $payment_icon = "fab fa-cc-discover";
+                    if ($provider_name === 'Stripe') {
+                        try {
+                            require_once '../includes/stripe_init.php';
+                            $stripe = new \Stripe\StripeClient($private_key);
+
+                            foreach ($saved_methods as $method) {
+                                $stripe_pm_id = $method['saved_payment_provider_method'];
+
+                                $pm = $stripe->paymentMethods->retrieve($stripe_pm_id, []);
+                                $brand = escapeHtml($pm->card->brand);
+                                $last4 = escapeHtml($pm->card->last4);
+                                $exp_month = escapeHtml($pm->card->exp_month);
+                                $exp_year = escapeHtml($pm->card->exp_year);
+
+                                $payment_icon = paymentBrandIcon($brand);
+
+                                echo "<li><i class='$payment_icon fa-2x me-2'></i>$brand x<strong>$last4</strong> | Exp. $exp_month/$exp_year";
+                                echo " – <a class='text-danger' href='post.php?delete_saved_payment={$method['saved_payment_id']}&csrf_token={$_SESSION['csrf_token']}'>Remove</a></li>";
                             }
+                        } catch (Exception $e) {
+                            $error = $e->getMessage();
+                            error_log("Stripe payment error: $error");
+                            logApp("Stripe", "error", "Exception retrieving payment methods: $error");
+                            echo "<p class='text-danger'>Unable to retrieve payment methods from Stripe.</p>";
+                        }
+                    } else {
+                        // Square - the description saved at card-creation time already has brand/last4/exp,
+                        // no need for a live API call just to render the list
+                        foreach ($saved_methods as $method) {
+                            $description = escapeHtml($method['saved_payment_description']);
+                            $payment_icon = paymentBrandIcon($description);
 
-                            $pm = $stripe->paymentMethods->retrieve($stripe_pm_id, []);
-                            $brand = escapeHtml($pm->card->brand);
-                            $last4 = escapeHtml($pm->card->last4);
-                            $exp_month = escapeHtml($pm->card->exp_month);
-                            $exp_year = escapeHtml($pm->card->exp_year);
-
-                            echo "<li><i class='$payment_icon fa-2x me-2'></i>$brand x<strong>$last4</strong> | Exp. $exp_month/$exp_year";
+                            echo "<li><i class='$payment_icon fa-2x me-2'></i>$description";
                             echo " – <a class='text-danger' href='post.php?delete_saved_payment={$method['saved_payment_id']}&csrf_token={$_SESSION['csrf_token']}'>Remove</a></li>";
                         }
-                    } catch (Exception $e) {
-                        $error = $e->getMessage();
-                        error_log("Stripe payment error: $error");
-                        logApp("Stripe", "error", "Exception retrieving payment methods: $error");
-                        echo "<p class='text-danger'>Unable to retrieve payment methods from Stripe.</p>";
                     }
                     ?>
                 </ul>
@@ -121,12 +127,33 @@ if (!$stripe_public_key || !$stripe_secret_key) {
         <div class="col-md-6">
             <b>Add a new payment method</b><br><br>
 
-            <input type="hidden" id="stripe_publishable_key" value="<?= $stripe_public_key ?>">
-            <script src="https://js.stripe.com/v3/"></script>
-            <script src="../js/autopay_setup_stripe.js"></script>
-            <div id="checkout">
-                <!-- Checkout form dynamically loaded -->
-            </div>
+            <?php if ($provider_name === 'Stripe') { ?>
+                <input type="hidden" id="stripe_publishable_key" value="<?= $public_key ?>">
+                <script src="https://js.stripe.com/v3/"></script>
+                <script src="../js/autopay_setup_stripe.js"></script>
+                <div id="checkout">
+                    <!-- Checkout form dynamically loaded -->
+                </div>
+            <?php } else {
+                $square_sandbox = squareIsSandbox($provider['payment_provider_public_key']);
+                $square_js_host = $square_sandbox ? 'sandbox.web.squarecdn.com' : 'web.squarecdn.com';
+            ?>
+                <script src="https://<?= $square_js_host ?>/v1/square.js"></script>
+                <input type="hidden" id="square_application_id" value="<?= $public_key ?>">
+                <input type="hidden" id="square_location_id" value="<?= $location_id ?>">
+                <form id="payment-form" action="post.php" method="post">
+                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                    <input type="hidden" id="source_id" name="source_id" value="">
+                    <div id="card-container"></div>
+                    <br>
+                    <button type="submit" name="create_square_card" id="submit" class="btn btn-success" hidden="hidden">
+                        <div class="spinner hidden" id="spinner"></div>
+                        <span id="button-text"><i class="fas fa-check me-2"></i>Save Card</span>
+                    </button>
+                    <div id="payment-message" class="d-none text-danger"></div>
+                </form>
+                <script src="../js/autopay_setup_square.js"></script>
+            <?php } ?>
 
         <?php } ?>
 
