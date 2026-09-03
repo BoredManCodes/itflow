@@ -42,7 +42,6 @@ if (isset($_POST['send_onboarding_form'])) {
         $submitters[] = [
             'role' => 'Provider',
             'email' => DOCUSEAL_PROVIDER_EMAIL,
-            'send_email' => false,
         ];
     }
 
@@ -61,7 +60,24 @@ if (isset($_POST['send_onboarding_form'])) {
 
     if ($result['ok']) {
         logAudit("Client", "DocuSeal", "$session_name sent onboarding form ($template_key) to $client_email", $client_id);
-        flashAlert("Onboarding form sent to <strong>$client_email</strong>");
+
+        $provider_link = '';
+        foreach ($result['submission'] as $submitter) {
+            if (($submitter['role'] ?? '') === 'Provider' && !empty($submitter['embed_src'])) {
+                $provider_link = $submitter['embed_src'];
+                break;
+            }
+        }
+
+        // A toast that vanishes in a few seconds is not a reliable way to
+        // remember "go fill in your side of this contract" - leave an actual
+        // ticket on the sender's own queue instead, the way every other
+        // outstanding task in this app already works.
+        if ($provider_link) {
+            docusealCreateReminderTicket($session_user_id, $client_id, $template_key, $provider_link);
+        }
+
+        flashAlert("Onboarding form sent to <strong>$client_email</strong>. A reminder ticket was created for your part.");
     } else {
         flashAlert("Could not send onboarding form: " . escapeHtml($result['error']), 'error');
     }
