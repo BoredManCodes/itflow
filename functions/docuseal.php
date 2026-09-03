@@ -25,6 +25,18 @@ function docusealCreateSubmission($template_id, $submitters, $metadata = []) {
         return ['ok' => false, 'error' => 'DocuSeal is not configured'];
     }
 
+    // DocuSeal has no submission-level metadata field - only submitters carry
+    // one (confirmed in Api::SubmissionsController's permitted params; a
+    // top-level 'metadata' key is silently dropped by strong parameters and
+    // never reaches the webhook payload). Stamp it onto every submitter instead,
+    // so the webhook can read itflow_client_id off whichever one it gets first.
+    if (!empty($metadata)) {
+        $submitters = array_map(function ($submitter) use ($metadata) {
+            $submitter['metadata'] = array_merge($submitter['metadata'] ?? [], $metadata);
+            return $submitter;
+        }, $submitters);
+    }
+
     $data = [
         'template_id' => intval($template_id),
         'submitters' => $submitters,
@@ -36,10 +48,6 @@ function docusealCreateSubmission($template_id, $submitters, $metadata = []) {
         // submitter's own send_email flag govern them independently.
         'order' => 'random',
     ];
-
-    if (!empty($metadata)) {
-        $data['metadata'] = $metadata;
-    }
 
     $ch = curl_init(rtrim(DOCUSEAL_BASE_URL, '/') . '/api/submissions');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
