@@ -3360,7 +3360,7 @@ if (isset($_POST['edit_ticket_schedule'])) {
             'recipient' => $contact_email,
             'recipient_name' => $contact_name,
             'subject' => $rendered_contact['subject'],
-            'body' => mysqli_escape_string($mysqli, $rendered_contact['body']),
+            'body' => $rendered_contact['body'],
             'cal_str' => $cal_str
         ];
 
@@ -3385,7 +3385,7 @@ if (isset($_POST['edit_ticket_schedule'])) {
                 'recipient' => $watcher_email,
                 'recipient_name' => $watcher_email,
                 'subject' => $rendered_watcher['subject'],
-                'body' => mysqli_escape_string($mysqli, escapeHtml($rendered_watcher['body'])),
+                'body' => $rendered_watcher['body'],
                 'cal_str' => $cal_str
             ];
         }
@@ -3518,7 +3518,7 @@ if (isset($_GET['cancel_ticket_schedule'])) {
             'recipient' => $contact_email,
             'recipient_name' => $contact_name,
             'subject' => $rendered_contact['subject'],
-            'body' => mysqli_escape_string($mysqli, $rendered_contact['body']),
+            'body' => $rendered_contact['body'],
             'cal_str' => $cal_str
         ];
 
@@ -3541,7 +3541,7 @@ if (isset($_GET['cancel_ticket_schedule'])) {
                 'recipient' => $watcher_email,
                 'recipient_name' => $watcher_email,
                 'subject' => $rendered_watcher['subject'],
-                'body' => mysqli_escape_string($mysqli, escapeHtml($rendered_watcher['body'])),
+                'body' => $rendered_watcher['body'],
                 'cal_str' => $cal_str
             ];
         }
