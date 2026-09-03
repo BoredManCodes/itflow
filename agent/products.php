@@ -176,7 +176,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                 <table class="table table-striped table-borderless table-hover mb-0">
                     <thead class="text-dark <?php if ($num_rows[0] == 0) { echo "d-none"; } ?> text-nowrap">
                     <tr>
-                        <td class="bg-light checkbox-column">
+                        <td class="checkbox-column border-end">
                             <div class="form-check">
                                 <input class="form-check-input" id="selectAllCheckbox" type="checkbox" onclick="checkAll(this)">
                             </div>
@@ -232,12 +232,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                     while ($row = mysqli_fetch_assoc($sql)) {
                         $product_id = intval($row['product_id']);
                         $product_name = escapeHtml($row['product_name']);
-                        $product_description = escapeHtml($row['product_description']);
-                        if (empty($product_description)) {
-                            $product_description_display = "-";
-                        } else {
-                            $product_description_display = "<div style='white-space:pre-line'>$product_description</div>";
-                        }
+                        $product_description = escapeHtml($row['product_description']) ?: '-';
                         $product_qty = intval($row['product_qty']);
                         $product_code = escapeHtml($row['product_code']);
                         $product_location = escapeHtml($row['product_location']) ?: '-';
@@ -254,7 +249,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
 
                         ?>
                         <tr>
-                            <td class="bg-light checkbox-column">
+                            <td class="checkbox-column bg-light border-end">
                                 <div class="form-check">
                                     <input class="form-check-input bulk-select" type="checkbox" name="product_ids[]" value="<?= $product_id ?>">
                                 </div>
@@ -267,7 +262,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                                 </a>
                             </td>
                             <td><?= $category_name ?></td>
-                            <td><?= $product_description_display ?></td>
+                            <td><div style='white-space:pre-line'><?= $product_description ?></div></td>
                             <?php if ($type_filter == 'product') { ?>
                             <td><?= $product_qty ?></td>
                             <td><?= $product_location ?></td>

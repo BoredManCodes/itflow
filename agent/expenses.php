@@ -208,7 +208,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
             <table class="table table-striped table-borderless table-hover mb-0">
                 <thead class="text-dark <?php if ($num_rows[0] == 0) { echo "d-none"; } ?>">
                 <tr>
-                    <td class="bg-light checkbox-column">
+                    <td class="checkbox-column border-end">
                         <div class="form-check">
                             <input class="form-check-input" id="selectAllCheckbox" type="checkbox" onclick="checkAll(this)">
                         </div>
@@ -268,12 +268,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                     $category_name = escapeHtml($row['category_name']);
                     $account_name = escapeHtml($row['account_name']);
                     $expense_account_id = intval($row['expense_account_id']);
-                    $client_name = escapeHtml($row['client_name']);
-                    if(empty($client_name)) {
-                        $client_name_display = "-";
-                    } else {
-                        $client_name_display = $client_name;
-                    }
+                    $client_name = escapeHtml($row['client_name']) ?: '-';
                     $expense_client_id = intval($row['expense_client_id']);
 
                     if (empty($expense_receipt)) {
@@ -287,7 +282,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                     ?>
 
                     <tr>
-                        <td class="bg-light checkbox-column">
+                        <td class="checkbox-column bg-light border-end">
                             <div class="form-check">
                                 <input class="form-check-input bulk-select" type="checkbox" name="expense_ids[]" value="<?= $expense_id ?>">
                             </div>
@@ -307,7 +302,7 @@ $num_rows = mysqli_fetch_row(mysqli_query($mysqli, "SELECT FOUND_ROWS()"));
                         <td><?= $vendor_name ?></td>
                         <td class="text-end font-monospace"><?= numfmt_format_currency($currency_format, $expense_amount, $expense_currency_code) ?></td>
                         <td><?= $account_name ?></td>
-                        <td><?= $client_name_display ?></td>
+                        <td><?= $client_name ?></td>
                         <td>
                             <div class="dropdown dropstart text-center">
                                 <button class="btn btn-secondary btn-sm" type="button" data-bs-toggle="dropdown">

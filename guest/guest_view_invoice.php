@@ -102,6 +102,16 @@ $payment_provider_id = intval($row['payment_provider_id']);
 $payment_provider_name = escapeHtml($row['payment_provider_name']);
 $payment_provider_threshold = floatval($row['payment_provider_threshold']);
 
+
+// Get client's customer ID with the active provider (Stripe and Square both use client_payment_provider)
+$provider_customer_query = mysqli_query($mysqli, "
+    SELECT payment_provider_client FROM client_payment_provider
+    WHERE client_id = $client_id AND payment_provider_id = $payment_provider_id
+    LIMIT 1
+");
+$provider_customer = mysqli_fetch_assoc($provider_customer_query);
+$provider_customer_id = $provider_customer ? escapeSql($provider_customer['payment_provider_client']) : null;
+
 //Set Currency Format
 $currency_format = numfmt_create($company_locale, NumberFormatter::CURRENCY);
 
@@ -180,8 +190,8 @@ if ($balance > 0) {
                     <a class="btn btn-default" href="guest_post.php?export_invoice_pdf=<?= $invoice_id ?>&url_key=<?= $url_key ?>">
                         <i class="fa fa-fw fa-download me-2"></i>Download
                     </a>
-                    <?php
-                    if ($invoice_status !== "Paid" &&
+                    <?php if (
+                        $invoice_status !== "Paid" &&
                         $invoice_status  !== "Cancelled" &&
                         $invoice_status !== "Draft" &&
                         $payment_provider_id &&
@@ -189,10 +199,18 @@ if ($balance > 0) {
                             $payment_provider_threshold == 0 ||
                             $payment_provider_threshold > $invoice_amount
                         )
-                    ){ ?>
-                        <?php $guest_pay_url = $payment_provider_name === 'Square' ? 'guest_pay_invoice_square.php' : 'guest_pay_invoice_stripe.php'; ?>
-                        <a class="btn btn-success" href="<?= $guest_pay_url ?>?invoice_id=<?= $invoice_id ?>&url_key=<?= $url_key ?>"><i class="fa fa-fw fa-credit-card me-2"></i>Pay Now </a>
-                    <?php } ?>
+                    )
+                    {
+                        // Online payment - either setup a customer record, or pay directly if a customer record already exists
+                        $guest_pay_url = $payment_provider_name === 'Square' ? 'guest_pay_invoice_square.php' : 'guest_pay_invoice_stripe.php';
+                        $guest_setup_url = $payment_provider_name === 'Square' ? 'guest_pay_setup_square_customer.php' : 'guest_pay_setup_stripe_customer.php';
+                        if ($provider_customer_id) { ?>
+                            <a class="btn btn-success" href="<?= $guest_pay_url ?>?invoice_id=<?= $invoice_id ?>&url_key=<?= $url_key ?>"><i class="fa fa-fw fa-credit-card me-2"></i>Pay Now </a>
+                        <?php }
+                        else { ?>
+                            <a class="btn btn-success" href="<?= $guest_setup_url ?>?invoice_id=<?= $invoice_id ?>&url_key=<?= $url_key ?>"><i class="fa fa-fw fa-credit-card me-2"></i>Pay Now </a>
+                        <?php }
+                    } ?>
                 </div>
             </div>
         </div>

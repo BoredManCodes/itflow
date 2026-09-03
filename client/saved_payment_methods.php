@@ -62,15 +62,17 @@ while ($row = mysqli_fetch_assoc($saved_methods_query)) {
     <div class="col-md-6">
 
         <?php if (!$provider_customer_id) { ?>
-            In order to set up automatic payments, you must create a customer record with <?= $provider_name ?>.<br>
-            First, you must authorize <?= $provider_name ?> to store your card details for the purpose of automatic payment.
-            <br><br>
+            In order to set up automatic payments, you must create a <?= $provider_name ?> customer record.
+            <br>
+            By saving your card details, you grant consent for automatic payments.
+            <small class="text-muted d-block mt-2"><?= $provider_name ?> processes your information in accordance with its Privacy Policy and Terms.</small>
+            <br>
 
             <form action="post.php" method="POST">
                 <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
 
                 <div class="mb-3">
-                    <button type="submit" class="btn btn-success" name="create_<?= strtolower($provider_name) ?>_customer"><strong><i class="fas fa-check me-2"></i>I grant consent for automatic payments</strong></button>
+                    <button type="submit" class="btn btn-success" name="create_<?= strtolower($provider_name) ?>_customer"><strong><i class="fas fa-check me-2"></i>Continue</strong></button>
                 </div>
             </form>
 
@@ -81,6 +83,7 @@ while ($row = mysqli_fetch_assoc($saved_methods_query)) {
             <?php if (empty($saved_methods)) { ?>
                 <p>You currently have no saved payment methods. Please add one below.</p>
             <?php } else { ?>
+                <p>Payment methods you've authorized us to save for future payments:</p>
                 <ul class="list-unstyled">
                     <?php
 
@@ -125,7 +128,9 @@ while ($row = mysqli_fetch_assoc($saved_methods_query)) {
             <?php } ?>
         </div>
         <div class="col-md-6">
-            <b>Add a new payment method</b><br><br>
+            <b>Add a new payment method</b>
+            <p>If you save payment details, you grant consent for automatic payments.</p>
+            <br><br>
 
             <?php if ($provider_name === 'Stripe') { ?>
                 <input type="hidden" id="stripe_publishable_key" value="<?= $public_key ?>">

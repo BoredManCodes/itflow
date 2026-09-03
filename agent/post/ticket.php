@@ -125,7 +125,7 @@ if (isset($_POST['add_ticket'])) {
         $ticket_number = intval($row['ticket_number']);
         $ticket_category = escapeSql($row['ticket_category']);
         $ticket_subject = escapeSql($row['ticket_subject']);
-        $ticket_details = mysqli_escape_string($mysqli, $row['ticket_details']);
+        $ticket_details = $row['ticket_details'];
         $ticket_priority = escapeSql($row['ticket_priority']);
         $ticket_status = escapeSql($row['ticket_status']);
         $ticket_status_name = escapeSql(getTicketStatusName($row['ticket_status']));
@@ -388,7 +388,7 @@ if (isset($_POST['edit_ticket'])) {
     $ticket_prefix = escapeSql($row['ticket_prefix']);
     $ticket_number = intval($row['ticket_number']);
     $ticket_category = escapeSql($row['ticket_category']);
-    $ticket_details = mysqli_escape_string($mysqli, $row['ticket_details']);
+    $ticket_details = $row['ticket_details'];
     $ticket_status = escapeSql($row['ticket_status_name']);
     $ticket_created_by = intval($row['ticket_created_by']);
     $ticket_assigned_to = intval($row['ticket_assigned_to']);
@@ -584,7 +584,7 @@ if (isset($_POST['edit_ticket_contact'])) {
     $ticket_number = intval($row['ticket_number']);
     $ticket_status = escapeSql($row['ticket_status_name']);
     $ticket_subject = escapeSql($row['ticket_subject']);
-    $ticket_details = mysqli_escape_string($mysqli, $row['ticket_details']);
+    $ticket_details = $row['ticket_details'];
     $url_key = escapeSql($row['ticket_url_key']);
     $client_id = intval($row['ticket_client_id']);
 
@@ -713,7 +713,7 @@ if (isset($_POST['add_ticket_watcher'])) {
     $ticket_number = intval($row['ticket_number']);
     $ticket_category = escapeSql($row['ticket_category']);
     $ticket_subject = escapeSql($row['ticket_subject']);
-    $ticket_details = mysqli_escape_string($mysqli, $row['ticket_details']);
+    $ticket_details = $row['ticket_details'];
     $ticket_priority = escapeSql($row['ticket_priority']);
     $ticket_status = escapeSql($row['ticket_status_name']);
     $url_key = escapeSql($row['ticket_url_key']);
@@ -1501,7 +1501,8 @@ if (isset($_POST['bulk_resolve_tickets'])) {
     enforceUserPermission('module_support', 2);
 
     // POST variables
-    $details = mysqli_escape_string($mysqli, $_POST['bulk_details']);
+    $details_raw = $_POST['bulk_details']; // Used for the client email - addToMailQueue() escapes it itself
+    $details = mysqli_escape_string($mysqli, $details_raw);
     $ticket_reply_time_worked = escapeSql($_POST['time']);
     $private_note = intval($_POST['bulk_private_note']);
     if ($private_note == 1) {
@@ -1591,7 +1592,7 @@ if (isset($_POST['bulk_resolve_tickets'])) {
                     $rendered = renderEmailTemplate('ticket_resolved_pending_closure_task', [
                         'contact_name' => $contact_name,
                         'ticket_subject' => $ticket_subject,
-                        'details' => $details,
+                        'details' => $details_raw,
                         'ticket_reopen_url' => "https://$config_base_url/guest/guest_view_ticket.php?ticket_id=$ticket_id&url_key=$url_key",
                         'ticket_prefix' => $ticket_prefix,
                         'ticket_number' => $ticket_number,
@@ -1662,7 +1663,8 @@ if (isset($_POST['bulk_ticket_reply'])) {
     enforceUserPermission('module_support', 2);
 
     // POST variables
-    $ticket_reply = mysqli_escape_string($mysqli, $_POST['bulk_reply_details']);
+    $ticket_reply_raw = $_POST['bulk_reply_details']; // Used for the client email - addToMailQueue() escapes it itself
+    $ticket_reply = mysqli_escape_string($mysqli, $ticket_reply_raw);
     $ticket_status = intval($_POST['bulk_status']);
     $ticket_reply_time_worked = escapeSql($_POST['time']);
     $private_note = intval($_POST['bulk_private_reply']);
@@ -1781,7 +1783,7 @@ if (isset($_POST['bulk_ticket_reply'])) {
                 $rendered = renderEmailTemplate('ticket_update', [
                     'contact_name' => $contact_name,
                     'ticket_subject' => $ticket_subject,
-                    'ticket_reply' => $ticket_reply,
+                    'ticket_reply' => $ticket_reply_raw,
                     'ticket_prefix' => $ticket_prefix,
                     'ticket_number' => $ticket_number,
                     'ticket_status_name' => $ticket_status_name,
@@ -2064,6 +2066,7 @@ if (isset($_POST['add_ticket_reply'])) {
         $ticket_reply .= getFieldById('user_settings',$session_user_id,'user_config_signature');
     }
 
+    $ticket_reply_raw = $ticket_reply; // Used for the client email - addToMailQueue() escapes it itself
     $ticket_reply = mysqli_escape_string($mysqli, $ticket_reply); // SQL Escape Ticket Reply
 
     // Update Ticket Status & updated at (in case status didn't change)
@@ -2144,7 +2147,7 @@ if (isset($_POST['add_ticket_reply'])) {
                 $rendered = renderEmailTemplate('ticket_resolved_pending_closure', [
                     'contact_name' => $contact_name,
                     'ticket_subject' => $ticket_subject,
-                    'ticket_reply' => $ticket_reply,
+                    'ticket_reply' => $ticket_reply_raw,
                     'ticket_reopen_url' => $ticket_url,
                     'ticket_prefix' => $ticket_prefix,
                     'ticket_number' => $ticket_number,
@@ -2159,7 +2162,7 @@ if (isset($_POST['add_ticket_reply'])) {
                 $rendered = renderEmailTemplate('ticket_update', [
                     'contact_name' => $contact_name,
                     'ticket_subject' => $ticket_subject,
-                    'ticket_reply' => $ticket_reply,
+                    'ticket_reply' => $ticket_reply_raw,
                     'ticket_prefix' => $ticket_prefix,
                     'ticket_number' => $ticket_number,
                     'ticket_status_name' => $ticket_status_name,
@@ -3360,7 +3363,7 @@ if (isset($_POST['edit_ticket_schedule'])) {
             'recipient' => $contact_email,
             'recipient_name' => $contact_name,
             'subject' => $rendered_contact['subject'],
-            'body' => mysqli_escape_string($mysqli, $rendered_contact['body']),
+            'body' => $rendered_contact['body'],
             'cal_str' => $cal_str
         ];
 
@@ -3385,7 +3388,7 @@ if (isset($_POST['edit_ticket_schedule'])) {
                 'recipient' => $watcher_email,
                 'recipient_name' => $watcher_email,
                 'subject' => $rendered_watcher['subject'],
-                'body' => mysqli_escape_string($mysqli, escapeHtml($rendered_watcher['body'])),
+                'body' => $rendered_watcher['body'],
                 'cal_str' => $cal_str
             ];
         }
@@ -3518,7 +3521,7 @@ if (isset($_GET['cancel_ticket_schedule'])) {
             'recipient' => $contact_email,
             'recipient_name' => $contact_name,
             'subject' => $rendered_contact['subject'],
-            'body' => mysqli_escape_string($mysqli, $rendered_contact['body']),
+            'body' => $rendered_contact['body'],
             'cal_str' => $cal_str
         ];
 
@@ -3541,7 +3544,7 @@ if (isset($_GET['cancel_ticket_schedule'])) {
                 'recipient' => $watcher_email,
                 'recipient_name' => $watcher_email,
                 'subject' => $rendered_watcher['subject'],
-                'body' => mysqli_escape_string($mysqli, escapeHtml($rendered_watcher['body'])),
+                'body' => $rendered_watcher['body'],
                 'cal_str' => $cal_str
             ];
         }

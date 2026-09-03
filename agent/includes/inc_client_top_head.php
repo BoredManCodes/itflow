@@ -39,6 +39,13 @@
                         data-modal-url="modals/client/client_edit.php?id=<?= $client_id ?>">
                         <i class="fas fa-fw fa-edit me-2"></i>Edit Client
                     </a>
+                    <?php if (docusealConfigured()) { ?>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item ajax-modal" href="#"
+                            data-modal-url="modals/client/client_send_onboarding.php?id=<?= $client_id ?>">
+                            <i class="fas fa-fw fa-file-signature me-2"></i>Send Onboarding Form
+                        </a>
+                    <?php } ?>
                     <?php if (lookupUserPermission("module_billing") >= 2) { ?>
                         <?php if ($show_add_credit) { ?>
                         <div class="dropdown-divider"></div>
