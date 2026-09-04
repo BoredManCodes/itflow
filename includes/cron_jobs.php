@@ -65,6 +65,14 @@ function cronJobRegistry(): array
             'interval_minutes' => 1,
         ],
         [
+            'name' => 'uptime_monitor_check',
+            'label' => 'Uptime Monitor Check',
+            'script' => 'uptime_monitor_check.php',
+            'description' => 'Polls UptimeRobot for the monitors in uptime_monitors and opens/resolves the matching ticket on down/up.',
+            'schedule' => 'Interval',
+            'interval_minutes' => 5,
+        ],
+        [
             'name' => 'domain_refresher',
             'label' => 'Domain Refresher',
             'script' => 'domain_refresher.php',

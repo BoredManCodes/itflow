@@ -2300,6 +2300,7 @@ CREATE TABLE `settings` (
   `config_ticket_default_billable` tinyint(1) NOT NULL DEFAULT 0,
   `config_ticket_timer_autostart` tinyint(1) NOT NULL DEFAULT 0,
   `config_ticket_auto_assign_user_id` int(11) NOT NULL DEFAULT 0,
+  `config_uptimerobot_api_key` varchar(64) DEFAULT NULL,
   `config_enable_cron` tinyint(1) NOT NULL DEFAULT 0,
   `config_recurring_auto_send_invoice` tinyint(1) NOT NULL DEFAULT 1,
   `config_enable_alert_domain_expire` tinyint(1) NOT NULL DEFAULT 1,
@@ -3014,6 +3015,27 @@ CREATE TABLE `trips` (
   `trip_user_id` int(11) NOT NULL DEFAULT 0,
   `trip_client_id` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`trip_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `uptime_monitors`
+--
+
+DROP TABLE IF EXISTS `uptime_monitors`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8mb4 */;
+CREATE TABLE `uptime_monitors` (
+  `uptime_monitor_id` int(11) NOT NULL AUTO_INCREMENT,
+  `uptime_monitor_name` varchar(200) NOT NULL COMMENT 'Exact UptimeRobot monitor friendly name',
+  `uptime_monitor_provider_id` bigint(20) DEFAULT NULL COMMENT 'UptimeRobot monitor ID, learned from the API on first match',
+  `uptime_monitor_client_id` int(11) NOT NULL,
+  `uptime_monitor_contact_id` int(11) NOT NULL COMMENT 'Ticket contact notified when this monitor alerts',
+  `uptime_monitor_last_status` tinyint(4) DEFAULT NULL COMMENT 'Last UptimeRobot status code seen (2=up, 9=down, etc)',
+  `uptime_monitor_open_ticket_id` int(11) DEFAULT NULL COMMENT 'Ticket raised by the current outage, cleared once it resolves',
+  `uptime_monitor_created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`uptime_monitor_id`),
+  UNIQUE KEY `uptime_monitor_name` (`uptime_monitor_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
