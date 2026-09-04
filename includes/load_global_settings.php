@@ -31,7 +31,7 @@ $sql_settings = mysqli_query($mysqli, "SELECT config_azure_client_id, config_azu
     config_ticket_email_parse_unknown_senders, config_ticket_from_email,
     config_ticket_from_name, config_ticket_moving_columns,
     config_ticket_auto_assign_user_id, config_ticket_new_ticket_notification_email, config_ticket_next_number,
-    config_ticket_ordering, config_ticket_prefix, config_ticket_timer_autostart,
+    config_ticket_ordering, config_ticket_prefix, config_ticket_timer_autostart, config_uptimerobot_api_key,
     config_timezone, config_phone_show_country_code, config_phone_mask,
     config_update_last_notified_version, config_update_notification_email,
     config_whitelabel_enabled, config_whitelabel_key,
@@ -127,6 +127,7 @@ $config_ticket_moving_columns = intval($row['config_ticket_moving_columns']);
 $config_ticket_ordering = intval($row['config_ticket_ordering']);
 $config_ticket_timer_autostart = intval($row['config_ticket_timer_autostart']);
 $config_ticket_auto_assign_user_id = intval($row['config_ticket_auto_assign_user_id']);
+$config_uptimerobot_api_key = $row['config_uptimerobot_api_key'];
 
 // Cron
 $config_enable_cron = intval($row['config_enable_cron']);
