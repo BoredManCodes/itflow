@@ -147,6 +147,19 @@ function sqlEsc($value): string {
     return mysqli_real_escape_string($mysqli, (string) ($value ?? ''));
 }
 
+// Lowercase domain part of an email/UPN, or '' if there's no @ in it.
+function emailDomain(string $email): string {
+    $at = strrpos($email, '@');
+    return $at === false ? '' : strtolower(substr($email, $at + 1));
+}
+
+// A tenant's verified domains, lowercased. Used to filter out B2B collaboration
+// accounts from a related organisation - see the big comment where this is called.
+function entraGetVerifiedDomains(string $token): array {
+    $domains = entraGraphGetAll("https://graph.microsoft.com/v1.0/domains", $token) ?? [];
+    return array_map(fn($d) => strtolower($d['id']), $domains);
+}
+
 // First non-empty string, or ''.
 function firstNonEmpty(...$values): string {
     foreach ($values as $value) {
@@ -231,7 +244,7 @@ function friendlySkuName(string $sku_part_number): string {
  * Contact sync
  * ------------------------------------------------------------------ */
 
-function entraSyncContacts(array $tenant, string $token, array $sku_names): array {
+function entraSyncContacts(array $tenant, string $token, array $sku_names, array $verified_domains): array {
     global $mysqli;
 
     $tenant_id = intval($tenant['entra_tenant_id']);
@@ -251,14 +264,22 @@ function entraSyncContacts(array $tenant, string $token, array $sku_names): arra
     $pushed_to_entra = 0;
 
     foreach ($users as $user) {
-        // Guests (cross-tenant access, e.g. a shared meeting room account) are not
-        // this business's staff and have no business phone/title to manage here.
+        // Guests (userType 'Guest') are the obvious cross-tenant case, but two related
+        // businesses set up for B2B collaboration (e.g. sharing a meeting room's
+        // calendar) can invite each other's whole staff as internal 'Member' accounts
+        // instead of guests - MTSS's tenant has ADNav's entire staff list this way.
+        // userType alone misses that, so this also drops anyone whose real email
+        // domain isn't one this tenant actually owns.
         if (($user['userType'] ?? 'Member') !== 'Member') {
             continue;
         }
 
-        $object_id = $user['id'];
         $email = firstNonEmpty($user['mail'] ?? '', $user['userPrincipalName'] ?? '');
+        if ($email !== '' && !in_array(emailDomain($email), $verified_domains, true)) {
+            continue;
+        }
+
+        $object_id = $user['id'];
 
         $link = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT * FROM entra_sync_contacts
             WHERE entra_sync_contact_tenant_id = $tenant_id AND entra_sync_contact_object_id = '" . sqlEsc($object_id) . "' LIMIT 1"));
@@ -372,13 +393,18 @@ function entraSyncContacts(array $tenant, string $token, array $sku_names): arra
                 }
                 $snapshot_updates[$snapshot_col] = $entra_value;
             } else {
-                // Neither side moved relative to the snapshot - including a brand new
-                // link, where the snapshot doesn't exist yet. Seed/keep it at the value
-                // both sides already agree on (itflow_value, which by construction equals
-                // entra_value here), not the old/absent snapshot - otherwise a first link
-                // against a pre-existing contact permanently misreads that contact's
-                // existing data as "changed since the snapshot" on every future run.
-                $snapshot_updates[$snapshot_col] = $itflow_value;
+                // entra_changed is false, so entra_value already equals snapshot_value -
+                // seeding from entra_value is always a safe no-op in the steady state.
+                // It must NOT be seeded from itflow_value: on a brand new link (no snapshot
+                // yet) where Entra's field is genuinely blank but a pre-existing ITFlow
+                // contact already had real data in it (e.g. a phone number Entra has never
+                // had), seeding from itflow_value falsely records that data as the agreed
+                // baseline - the next run then sees Entra's still-blank value as "changed"
+                // against that baseline and the entra-wins branch overwrites the real data
+                // with blank. Seeding from entra_value instead leaves such a field alone
+                // indefinitely (until write-back, if ever enabled, pushes it up), which is
+                // what actually happened here and is the correct outcome.
+                $snapshot_updates[$snapshot_col] = $entra_value;
             }
         }
 
@@ -593,7 +619,8 @@ while ($tenant = mysqli_fetch_assoc($tenants_sql)) {
         $result_line = [];
 
         if ($tenant['entra_tenant_sync_contacts']) {
-            $contacts_result = entraSyncContacts($tenant, $token, $sku_names);
+            $verified_domains = entraGetVerifiedDomains($token);
+            $contacts_result = entraSyncContacts($tenant, $token, $sku_names, $verified_domains);
             $result_line[] = "{$contacts_result['synced']} contacts ({$contacts_result['created']} new, {$contacts_result['pushed_to_entra']} pushed to Entra)";
         }
 
