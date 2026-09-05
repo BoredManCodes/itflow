@@ -74,15 +74,15 @@ header("X-Frame-Options: DENY"); // Legacy
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto">
                 <li class="nav-item <?php if (basename($_SERVER['PHP_SELF']) == "index.php") {echo "active";} ?>">
-                    <a class="nav-link" href="/client/index.php">Home</a>
+                    <a class="nav-link" href="/client/index.php" data-tutorial-step="home">Home</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?php if (basename($_SERVER['PHP_SELF']) == "tickets.php" || basename($_SERVER['PHP_SELF']) == "ticket_add.php" || basename($_SERVER['PHP_SELF']) == "ticket.php") {echo "active";} ?>" href="/client/tickets.php">Tickets</a>
+                    <a class="nav-link <?php if (basename($_SERVER['PHP_SELF']) == "tickets.php" || basename($_SERVER['PHP_SELF']) == "ticket_add.php" || basename($_SERVER['PHP_SELF']) == "ticket.php") {echo "active";} ?>" href="/client/tickets.php" data-tutorial-step="tickets">Tickets</a>
                 </li>
 
                 <?php if (contactCan('accounting') && $config_module_enable_accounting == 1) { ?>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle <?= in_array(basename($_SERVER['PHP_SELF']), ['invoices.php', 'quotes.php', 'autopay.php', 'statement.php']) ? 'active' : '' ?>" href="#" id="navbarDropdown1" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <a class="nav-link dropdown-toggle <?= in_array(basename($_SERVER['PHP_SELF']), ['invoices.php', 'quotes.php', 'autopay.php', 'statement.php']) ? 'active' : '' ?>" href="#" id="navbarDropdown1" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-tutorial-step="finance">
                             Finance
                         </a>
                         <div class="dropdown-menu" aria-labelledby="navbarDropdown1">
@@ -97,7 +97,7 @@ header("X-Frame-Options: DENY"); // Legacy
 
                 <?php if ($config_module_enable_itdoc && contactCan('itdoc')) { ?>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle <?= in_array(basename($_SERVER['PHP_SELF']), ['documents.php', 'contacts.php', 'domains.php', 'certificates.php']) ? 'active' : '' ?>" href="#" id="navbarDropdown2" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <a class="nav-link dropdown-toggle <?= in_array(basename($_SERVER['PHP_SELF']), ['documents.php', 'contacts.php', 'domains.php', 'certificates.php']) ? 'active' : '' ?>" href="#" id="navbarDropdown2" role="button" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" data-tutorial-step="technical">
                             Technical
                         </a>
                         <div class="dropdown-menu" aria-labelledby="navbarDropdown2">
@@ -138,7 +138,7 @@ header("X-Frame-Options: DENY"); // Legacy
 
             <ul class="nav navbar-nav ms-auto">
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" data-tutorial-step="account">
                         <?= stripslashes(escapeHtml($session_contact_name)) ?>
                     </a>
                     <div class="dropdown-menu">

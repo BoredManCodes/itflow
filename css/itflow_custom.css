@@ -1588,3 +1588,119 @@ html {
 #quickTimerNavItem.quick-timer-running > .nav-link {
     background-color: rgba(220, 53, 69, 0.35);
 }
+
+/* Client portal first-visit tour - js/portal_tutorial.js.
+
+   .portal-tutorial-blocker is a full-viewport click-catcher so the tour can't
+   be dismissed by accidentally clicking the page underneath. .portal-tutorial-spot
+   sits above it with pointer-events: none (clicks pass through to the blocker)
+   and does the dimming itself via a spread box-shadow rather than a separate
+   dark overlay - the shadow covers everything except the rounded rect it's
+   positioned over, which is the "spotlight" on the current nav target. The
+   bubble is above both, using var(--itflow-accent) so its arrow/button match
+   whatever theme colour the tenant has picked, and var(--bs-*) tokens so it
+   reads correctly in both light and dark mode without its own overrides. */
+.portal-tutorial-blocker {
+    position: fixed;
+    inset: 0;
+    z-index: 1090;
+    background: transparent;
+}
+
+.portal-tutorial-spot {
+    position: fixed;
+    z-index: 1091;
+    border-radius: .5rem;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, .6);
+    pointer-events: none;
+    transition: top .2s ease, left .2s ease, width .2s ease, height .2s ease;
+}
+
+.portal-tutorial-spot--hidden {
+    /* !important: overrides the inline top/left/width/height a previous
+       targeted step left behind - without it, stepping back to a centered
+       (no-target) step after a targeted one leaves the spotlight rectangle
+       stuck in its last position instead of disappearing. */
+    top: 50% !important;
+    left: 50% !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+.portal-tutorial-bubble {
+    position: fixed;
+    z-index: 1092;
+    width: 320px;
+    max-width: calc(100vw - 24px);
+    padding: 1rem;
+    border-radius: .5rem;
+    background: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    border: 1px solid var(--bs-border-color);
+    box-shadow: 0 .5rem 1.5rem rgba(0, 0, 0, .35);
+}
+
+.portal-tutorial-bubble--center {
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%);
+}
+
+.portal-tutorial-bubble:not(.portal-tutorial-bubble--center) {
+    transform: none;
+}
+
+.portal-tutorial-step-count {
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--bs-secondary-color);
+    margin-bottom: .25rem;
+}
+
+.portal-tutorial-title {
+    margin-bottom: .5rem;
+    color: var(--itflow-accent, var(--bs-primary));
+}
+
+.portal-tutorial-text {
+    margin-bottom: 1rem;
+    font-size: .9rem;
+}
+
+.portal-tutorial-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.portal-tutorial-actions-right {
+    display: flex;
+    gap: .5rem;
+}
+
+.portal-tutorial-bubble-arrow {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    display: none;
+}
+
+.portal-tutorial-bubble-arrow--top {
+    display: block;
+    top: -8px;
+    border-right: none;
+    border-bottom: none;
+    transform: translateX(-50%) rotate(45deg);
+}
+
+.portal-tutorial-bubble-arrow--bottom {
+    display: block;
+    bottom: -8px;
+    top: auto;
+    border-left: none;
+    border-top: none;
+    transform: translateX(-50%) rotate(45deg);
+}

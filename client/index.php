@@ -170,7 +170,7 @@ $sql_assigned_assets = mysqli_query(
 ?>
 <div class="row">
     <div class="col-md-2">
-        <a href="ticket_add.php" class="btn btn-primary w-100 mb-3">New ticket</a>
+        <a href="ticket_add.php" class="btn btn-primary w-100 mb-3" data-tutorial-step="new_ticket">New ticket</a>
     </div>
 </div>
 <?php
@@ -286,4 +286,24 @@ if (contactCan('itdoc')) {
     <?php } ?>
 </div>
 
-<?php require_once "includes/footer.php"; ?>
+<?php
+/*
+ * First-visit portal tour - shown once per contact (contact_portal_tutorial_seen_at).
+ * The steps below are keyed to data-tutorial-step attributes on nav elements in
+ * header.php and the New ticket button above; js/portal_tutorial.js skips any
+ * step whose target isn't in the DOM, which is what keeps the Finance/Technical
+ * steps out of the tour for contacts who can't see those nav sections in the
+ * first place - no separate permission check needed here.
+ */
+if (!$session_contact_tutorial_seen) {
+?>
+<div id="portalTutorialConfig" hidden
+    data-contact-name="<?= stripslashes(escapeHtml($session_contact_name)) ?>"
+    data-csrf-token="<?= escapeHtml($_SESSION['csrf_token']) ?>"
+    data-dismiss-url="post.php"></div>
+<script src="/js/portal_tutorial.js"></script>
+<?php
+}
+
+require_once "includes/footer.php";
+?>

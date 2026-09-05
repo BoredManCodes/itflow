@@ -862,6 +862,7 @@ CREATE TABLE `contacts` (
   `contact_user_id` int(11) NOT NULL DEFAULT 0,
   `contact_department` varchar(200) DEFAULT NULL,
   `contact_client_id` int(11) NOT NULL DEFAULT 0,
+  `contact_portal_tutorial_seen_at` datetime DEFAULT NULL COMMENT 'When this contact dismissed/completed the client portal first-visit tour',
   PRIMARY KEY (`contact_id`),
   KEY `contact_client_id` (`contact_client_id`,`contact_archived_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

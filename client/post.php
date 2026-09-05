@@ -293,6 +293,24 @@ if (isset($_POST['set_contact_pin'])) {
 
 }
 
+if (isset($_POST['dismiss_portal_tutorial'])) {
+
+    validateCSRFToken();
+
+    /*
+     * SCOPING: same as the PIN/phone handlers above - the row updated is the
+     * logged-in contact's own, from the session. Fired via fetch() from
+     * js/portal_tutorial.js as soon as the tour ends or is skipped, so it
+     * responds with JSON instead of redirecting like the rest of this file.
+     */
+    mysqli_query($mysqli, "UPDATE contacts SET contact_portal_tutorial_seen_at = NOW() WHERE contact_id = $session_contact_id AND contact_client_id = $session_client_id");
+
+    header('Content-Type: application/json');
+    echo json_encode(['success' => true]);
+    exit;
+
+}
+
 if (isset($_GET['approve_ticket_task'])) {
 
     validateCSRFToken();
