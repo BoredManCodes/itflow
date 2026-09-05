@@ -267,10 +267,15 @@ function entraSyncContacts(array $tenant, string $token, array $sku_names): arra
 
         // Not linked yet - try to match an existing contact by email before creating a
         // new one, so a contact already in ITFlow gets adopted rather than duplicated.
+        // Excludes contacts already claimed by a different Entra user - a shared mailbox
+        // proxy address or similar oddity could otherwise match two users to one contact
+        // and the second link INSERT would fail on entra_sync_contact_contact_id's UNIQUE key.
         if (!$contact_id && $email !== '') {
             $existing = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT contact_id FROM contacts
                 WHERE contact_client_id = $client_id AND contact_archived_at IS NULL
-                AND LOWER(contact_email) = LOWER('" . sqlEsc($email) . "') LIMIT 1"));
+                AND LOWER(contact_email) = LOWER('" . sqlEsc($email) . "')
+                AND contact_id NOT IN (SELECT entra_sync_contact_contact_id FROM entra_sync_contacts)
+                LIMIT 1"));
             if ($existing) {
                 $contact_id = intval($existing['contact_id']);
             }
@@ -482,9 +487,16 @@ function entraSyncAssets(array $tenant, string $token): array {
         $asset_id = $link ? intval($link['entra_sync_asset_asset_id']) : 0;
 
         if (!$asset_id) {
+            // Entra device names aren't unique - the same physical machine can show up
+            // twice after a reimage/re-join with a new device ID but the old display
+            // name. Exclude assets already claimed by a different device link, or two
+            // same-named devices would both try to adopt the one asset row and the
+            // second link INSERT would fail on entra_sync_asset_asset_id's UNIQUE key.
             $existing = mysqli_fetch_assoc(mysqli_query($mysqli, "SELECT asset_id FROM assets
                 WHERE asset_client_id = $client_id AND asset_archived_at IS NULL
-                AND asset_name = '" . sqlEsc($name) . "' LIMIT 1"));
+                AND asset_name = '" . sqlEsc($name) . "'
+                AND asset_id NOT IN (SELECT entra_sync_asset_asset_id FROM entra_sync_assets)
+                LIMIT 1"));
             if ($existing) {
                 $asset_id = intval($existing['asset_id']);
             }
