@@ -111,6 +111,15 @@ function cronJobRegistry(): array
             'daily_at' => '03:30',
         ],
         [
+            'name' => 'entra_sync',
+            'label' => 'Entra ID Sync',
+            'script' => 'entra_sync.php',
+            'description' => 'Syncs contacts, assets and licenses with each client tenant in entra_tenants, pushing contact field edits back where write-back is enabled. Off by default - turn on per-tenant sync flags and review a run before enabling.',
+            'schedule' => 'Interval',
+            'interval_minutes' => 60,
+            'enabled' => 0,
+        ],
+        [
             'name' => 'update_check',
             'label' => 'Update Check',
             'script' => 'update_check.php',
