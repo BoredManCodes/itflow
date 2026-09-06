@@ -976,7 +976,7 @@ if (isset($_GET['add_payment_by_provider'])) {
         // Add Payment to History
         $pi_receipt_url_sql = $pi_receipt_url !== '' ? "'$pi_receipt_url'" : 'NULL';
         mysqli_query($mysqli, "INSERT INTO payments SET payment_date = '$pi_date', payment_amount = $pi_amount_paid, payment_currency_code = '$pi_currency', payment_account_id = $account_id, payment_method = '$provider_name', payment_reference = '$provider_name - $pi_id', payment_receipt_url = $pi_receipt_url_sql, payment_invoice_id = $invoice_id");
-        mysqli_query($mysqli, "INSERT INTO history SET history_status = 'Paid', history_description = 'Online Payment added (agent)', history_invoice_id = $invoice_id");
+        mysqli_query($mysqli, "INSERT INTO history SET history_status = 'Paid', history_description = 'Online Payment added (client)', history_invoice_id = $invoice_id");
 
         // Email receipt
         if (!empty($config_smtp_host)) {
