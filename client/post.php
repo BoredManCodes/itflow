@@ -1235,13 +1235,9 @@ if (isset($_POST['create_square_customer'])) {
 
 if (isset($_POST['create_square_card'])) {
 
-    error_log("TEMPDIAG entry headers_sent=" . (headers_sent($__df, $__dl) ? "true at $__df:$__dl" : "false"));
-
     validateCSRFToken();
 
     enforceContactCan('accounting');
-
-    error_log("TEMPDIAG after auth checks headers_sent=" . (headers_sent($__df, $__dl) ? "true at $__df:$__dl" : "false"));
 
     $source_id = escapeSql($_POST['source_id']);
 
@@ -1283,8 +1279,6 @@ if (isset($_POST['create_square_card'])) {
         redirect("saved_payment_methods.php");
     }
 
-    error_log("TEMPDIAG before try headers_sent=" . (headers_sent($__df, $__dl) ? "true at $__df:$__dl" : "false"));
-
     try {
         require_once '../includes/square_api.php';
 
@@ -1293,8 +1287,6 @@ if (isset($_POST['create_square_card'])) {
             'source_id' => $source_id,
             'card' => ['customer_id' => $square_customer_id],
         ]);
-
-        error_log("TEMPDIAG after square api call, response=" . json_encode($response));
 
         $card = $response['card'];
         $card_id = escapeSql($card['id']);
@@ -1316,9 +1308,8 @@ if (isset($_POST['create_square_card'])) {
                 saved_payment_created_at = NOW()
         ");
 
-    } catch (\Throwable $e) {
+    } catch (Exception $e) {
         $error = $e->getMessage();
-        error_log("TEMPDIAG caught " . get_class($e) . ": $error in " . $e->getFile() . ":" . $e->getLine());
         error_log("Square error while saving payment method: $error");
         logApp("Square", "error", "Exception saving payment method: $error");
 
@@ -1365,8 +1356,6 @@ if (isset($_POST['create_square_card'])) {
     }
 
     logAudit("Square", "Update", "$session_contact_name saved payment method ($saved_payment_description) (Card: $card_id)", $session_client_id);
-
-    error_log("TEMPDIAG before final redirect headers_sent=" . (headers_sent($__df, $__dl) ? "true at $__df:$__dl" : "false"));
 
     flashAlert("Payment method saved – thank you.");
     redirect("saved_payment_methods.php");

@@ -148,10 +148,11 @@ while ($row = mysqli_fetch_assoc($saved_methods_query)) {
                 <input type="hidden" id="square_location_id" value="<?= $location_id ?>">
                 <form id="payment-form" action="post.php" method="post">
                     <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                    <input type="hidden" name="create_square_card" value="1">
                     <input type="hidden" id="source_id" name="source_id" value="">
                     <div id="card-container"></div>
                     <br>
-                    <button type="submit" name="create_square_card" id="pay-submit" class="btn btn-success" hidden="hidden">
+                    <button type="submit" id="pay-submit" class="btn btn-success" hidden="hidden">
                         <div class="spinner hidden" id="spinner"></div>
                         <span id="button-text"><i class="fas fa-check me-2"></i>Save Card</span>
                     </button>
