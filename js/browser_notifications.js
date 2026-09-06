@@ -24,6 +24,17 @@ window.ItflowNotify = (function () {
         return outputArray;
     }
 
+    // Inverse of the above, for comparing an existing subscription's key
+    // (an ArrayBuffer) against the server's current key (a base64url string).
+    function arrayBufferToBase64Url(buffer) {
+        var bytes = new Uint8Array(buffer);
+        var binary = "";
+        for (var i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return window.btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    }
+
     // Registers the service worker and subscribes for real Web Push - this is
     // what lets a notification fire with no ITFlow tab or browser open at
     // all, unlike the polling below which only works while a tab is open.
@@ -35,8 +46,24 @@ window.ItflowNotify = (function () {
 
         navigator.serviceWorker.register("/sw.js").then(function (registration) {
             return registration.pushManager.getSubscription().then(function (existing) {
+                var currentKey = window.itflowVapidPublicKey.replace(/=+$/, "");
                 if (existing) {
-                    return existing;
+                    var existingKey = existing.options && existing.options.applicationServerKey
+                        ? arrayBufferToBase64Url(existing.options.applicationServerKey)
+                        : null;
+                    if (existingKey === currentKey) {
+                        return existing;
+                    }
+                    // The server's VAPID key has changed since this subscription was
+                    // created (e.g. a settings/DB reset) - it can never authenticate
+                    // again, so drop it and subscribe fresh rather than silently
+                    // failing on every push forever.
+                    return existing.unsubscribe().then(function () {
+                        return registration.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: urlBase64ToUint8Array(window.itflowVapidPublicKey)
+                        });
+                    });
                 }
                 return registration.pushManager.subscribe({
                     userVisibleOnly: true,
