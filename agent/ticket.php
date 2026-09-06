@@ -560,7 +560,14 @@ if (isset($_GET['ticket_id'])) {
                     <div class="ticket-field">
                         <div class="ticket-field-label">Status</div>
                         <div class="ticket-field-value">
-                            <span class="badge rounded-pill p-2 text-light" style="background-color: <?= $ticket_status_color ?>"><?= $ticket_status_name ?></span>
+                            <a href="#" title="Change status"
+                                class="text-decoration-none<?php if ($can_edit_ticket && !$ticket_is_closed) { echo " ajax-modal"; } ?>"
+                                <?php if ($can_edit_ticket && !$ticket_is_closed) { ?>
+                                    data-modal-url="modals/ticket/ticket_status.php?id=<?= $ticket_id ?>"
+                                <?php } ?>
+                            >
+                                <span class="badge rounded-pill p-2 text-light" style="background-color: <?= $ticket_status_color ?>"><?= $ticket_status_name ?></span>
+                            </a>
                         </div>
                     </div>
 

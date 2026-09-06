@@ -496,6 +496,54 @@ if (isset($_POST['edit_ticket_priority'])) {
 
 }
 
+if (isset($_POST['edit_ticket_status'])) {
+
+    validateCSRFToken();
+
+    enforceUserPermission('module_support', 2);
+
+    $ticket_id = intval($_POST['ticket_id']);
+    $ticket_status = intval($_POST['status']);
+
+    // Get ticket details before updating
+    $sql = mysqli_query($mysqli, "SELECT ticket_prefix, ticket_number, ticket_status, ticket_client_id FROM tickets WHERE ticket_id = $ticket_id");
+    $row = mysqli_fetch_assoc($sql);
+    $ticket_prefix = escapeSql($row['ticket_prefix']);
+    $ticket_number = intval($row['ticket_number']);
+    $original_ticket_status = intval($row['ticket_status']);
+    $client_id = intval($row['ticket_client_id']);
+
+    // Don't Enforce Client Access if Ticket doesn't have an assigned client
+    if ($client_id) {
+        enforceClientAccess();
+    }
+
+    $original_status_name = escapeSql(getTicketStatusName($original_ticket_status));
+    $new_status_name = escapeSql(getTicketStatusName($ticket_status));
+
+    mysqli_query($mysqli, "UPDATE tickets SET ticket_status = $ticket_status, ticket_updated_at = NOW() WHERE ticket_id = $ticket_id");
+    syncTicketSlaClock($ticket_id);
+
+    // Resolving through this quick control follows the same rules as resolving through a reply
+    if ($ticket_status == 4 && $original_ticket_status != 4) {
+        mysqli_query($mysqli, "UPDATE tickets SET ticket_resolved_at = NOW() WHERE ticket_id = $ticket_id");
+        setTicketResolutionSlaMet($ticket_id);
+
+        logTicketHistory($ticket_id, "$session_name resolved the ticket");
+
+        logAudit("Ticket", "Resolved", "$session_name resolved Ticket ticket ID $ticket_id", $client_id, $ticket_id);
+    } elseif ($ticket_status !== $original_ticket_status) {
+        logTicketHistory($ticket_id, "$session_name set the status to $new_status_name");
+    }
+
+    triggerCustomAction('ticket_update', $ticket_id);
+
+    flashAlert("Status updated from <strong>$original_status_name</strong> to <strong>$new_status_name</strong>");
+
+    redirect();
+
+}
+
 if (isset($_POST['edit_ticket_sla'])) {
 
     validateCSRFToken();
