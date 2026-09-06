@@ -11,7 +11,17 @@ async function initialize() {
   const locationId = document.getElementById("square_location_id").value;
 
   const payments = Square.payments(applicationId, locationId);
-  card = await payments.card();
+  // Square's card iframe defaults its hint/error text to near-black, which is
+  // invisible against this page's dark card background - explicit style is the
+  // only way to fix it since the iframe is sandboxed from our page CSS.
+  card = await payments.card({
+    style: {
+      ".message-text": { color: "#dc3545" },
+      ".message-icon": { color: "#dc3545" },
+      ".message-text.is-error": { color: "#dc3545" },
+      ".message-icon.is-error": { color: "#dc3545" },
+    },
+  });
   await card.attach("#card-container");
 
   document.getElementById("pay-submit").hidden = false;
