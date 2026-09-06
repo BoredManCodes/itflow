@@ -1062,7 +1062,7 @@ if (isset($_POST['create_square_customer'])) {
 
             logAudit("Square", "Create", "Guest $name created Square customer for $client_name as $square_customer_id and authorized future automatic payments", $client_id);
 
-            flashAlert("Square customer created. Thank you for your consent.");
+            flashAlert("Payment details saved. Now enter your card below to complete payment.");
 
         } catch (Exception $e) {
             $error = $e->getMessage();
@@ -1073,12 +1073,34 @@ if (isset($_POST['create_square_customer'])) {
 
             flashAlert("An error occurred while creating your Square customer. Please try again.", 'danger');
 
+            redirect('guest_view_invoice.php?invoice_id=' . $invoice_id . '&url_key=' . urlencode($invoice_url_key));
         }
 
-    } else {
-        flashAlert("Square customer already exists for your account.", 'danger');
     }
 
-    redirect('guest_view_invoice.php?invoice_id=' . $invoice_id . '&url_key=' . urlencode($invoice_url_key));
+    // Customer record now exists (either just created or already on file) - go straight
+    // to the card form instead of bouncing back to the invoice. Landing back on the
+    // invoice page after this step reads as "done" to a first-time payer when it isn't.
+    redirect('guest_pay_invoice_square.php?invoice_id=' . $invoice_id . '&url_key=' . urlencode($invoice_url_key));
+}
+
+// Beacon fired by guest_pay_invoice_square.js when card.tokenize() rejects a card
+// client-side. That failure never reaches guest_pay_invoice_square.php - Square's SDK
+// stops it before a source_id exists - so without this, a client can walk away thinking
+// they paid while nothing shows up anywhere in ITFlow to say otherwise.
+if (isset($_POST['log_square_tokenize_failure'])) {
+
+    $invoice_id      = intval($_POST['invoice_id']);
+    $invoice_url_key = escapeSql($_POST['url_key']);
+    $tokenize_message = escapeSql(substr($_POST['message'] ?? '', 0, 300));
+
+    $sql = mysqli_query($mysqli, "SELECT invoice_id FROM invoices WHERE invoice_id = $invoice_id AND invoice_url_key = '$invoice_url_key' LIMIT 1");
+
+    if ($sql && mysqli_num_rows($sql) === 1) {
+        mysqli_query($mysqli, "INSERT INTO history SET history_status = 'Payment failed', history_description = 'Square card entry rejected client-side: $tokenize_message', history_invoice_id = $invoice_id");
+        logApp("Square", "error", "Client-side tokenize failure for invoice ID $invoice_id: $tokenize_message");
+    }
+
+    exit();
 }
 

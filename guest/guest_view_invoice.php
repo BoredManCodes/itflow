@@ -208,7 +208,7 @@ if ($balance > 0) {
                             <a class="btn btn-success" href="<?= $guest_pay_url ?>?invoice_id=<?= $invoice_id ?>&url_key=<?= $url_key ?>"><i class="fa fa-fw fa-credit-card me-2"></i>Pay Now </a>
                         <?php }
                         else { ?>
-                            <a class="btn btn-success" href="<?= $guest_setup_url ?>?invoice_id=<?= $invoice_id ?>&url_key=<?= $url_key ?>"><i class="fa fa-fw fa-credit-card me-2"></i>Pay Now </a>
+                            <a class="btn btn-success" href="<?= $guest_setup_url ?>?invoice_id=<?= $invoice_id ?>&url_key=<?= $url_key ?>"><i class="fa fa-fw fa-credit-card me-2"></i>Add Payment Method </a>
                         <?php }
                     } ?>
                 </div>

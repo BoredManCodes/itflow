@@ -27,6 +27,7 @@ async function handleSubmit(e) {
     const message = (result.errors && result.errors[0] && result.errors[0].message)
       || "Please check your card details and try again.";
     showMessage(message);
+    logTokenizeFailure(message);
     setLoading(false);
     return;
   }
@@ -42,7 +43,22 @@ function showMessage(messageText) {
   const messageContainer = document.querySelector("#payment-message");
 
   messageContainer.classList.remove("d-none");
+  messageContainer.classList.add("alert", "alert-danger");
   messageContainer.textContent = messageText;
+  messageContainer.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+// So a rejected card shows up on the invoice in ITFlow instead of vanishing -
+// Square's SDK stops a bad card before it ever reaches guest_pay_invoice_square.php.
+function logTokenizeFailure(message) {
+  const body = new URLSearchParams({
+    log_square_tokenize_failure: "1",
+    invoice_id: document.getElementById("invoice_id").value,
+    url_key: document.getElementById("url_key").value,
+    message: message,
+  });
+
+  navigator.sendBeacon("guest_post.php", body);
 }
 
 function setLoading(isLoading) {
