@@ -919,6 +919,7 @@ if (isset($_GET['add_payment_by_provider'])) {
             $pi_amount_paid = floatval(($payment_intent->amount_received / 100));
             $pi_currency = strtoupper(escapeSql($payment_intent->currency));
             $pi_livemode = $payment_intent->livemode;
+            $pi_receipt_url = '';
             $payment_succeeded = ($payment_intent->status == "succeeded" && intval($balance_to_pay * 100) == intval($pi_amount_paid * 100));
 
         } catch (Exception $e) {
@@ -953,6 +954,7 @@ if (isset($_GET['add_payment_by_provider'])) {
             $pi_amount_paid = floatval(($square_payment['amount_money']['amount'] ?? 0) / 100);
             $pi_currency = strtoupper(escapeSql($square_payment['amount_money']['currency'] ?? $invoice_currency_code));
             $pi_livemode = !$square_sandbox;
+            $pi_receipt_url = escapeSql($square_payment['receipt_url'] ?? '');
             $payment_succeeded = ($square_payment && $square_payment['status'] === 'COMPLETED' && (int) round($balance_to_pay * 100) === (int) round($pi_amount_paid * 100));
 
         } catch (Exception $e) {
@@ -972,11 +974,14 @@ if (isset($_GET['add_payment_by_provider'])) {
         mysqli_query($mysqli, "UPDATE invoices SET invoice_status = 'Paid' WHERE invoice_id = $invoice_id");
 
         // Add Payment to History
-        mysqli_query($mysqli, "INSERT INTO payments SET payment_date = '$pi_date', payment_amount = $pi_amount_paid, payment_currency_code = '$pi_currency', payment_account_id = $account_id, payment_method = '$provider_name', payment_reference = '$provider_name - $pi_id', payment_invoice_id = $invoice_id");
+        $pi_receipt_url_sql = $pi_receipt_url !== '' ? "'$pi_receipt_url'" : 'NULL';
+        mysqli_query($mysqli, "INSERT INTO payments SET payment_date = '$pi_date', payment_amount = $pi_amount_paid, payment_currency_code = '$pi_currency', payment_account_id = $account_id, payment_method = '$provider_name', payment_reference = '$provider_name - $pi_id', payment_receipt_url = $pi_receipt_url_sql, payment_invoice_id = $invoice_id");
         mysqli_query($mysqli, "INSERT INTO history SET history_status = 'Paid', history_description = 'Online Payment added (agent)', history_invoice_id = $invoice_id");
 
         // Email receipt
         if (!empty($config_smtp_host)) {
+            $receipt_line = $pi_receipt_url !== '' ? "Receipt: <a href='$pi_receipt_url'>View Square Receipt</a><br>" : '';
+
             $rendered = renderEmailTemplate('payment_received_online', [
                 'contact_name' => $contact_name,
                 'amount' => numfmt_format_currency($currency_format, $invoice_amount, $invoice_currency_code),
@@ -986,6 +991,7 @@ if (isset($_GET['add_payment_by_provider'])) {
                 'company_name' => $company_name,
                 'company_phone' => $company_phone,
                 'from_email' => $config_invoice_from_email,
+                'receipt_line' => $receipt_line,
             ]);
             $subject = $rendered['subject'];
             $body = $rendered['body'];

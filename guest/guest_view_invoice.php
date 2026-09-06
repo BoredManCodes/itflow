@@ -365,6 +365,17 @@ if ($balance > 0) {
                             <td><div class="text-success">Paid:</div></td>
                             <td class="text-end text-success"><?= numfmt_format_currency($currency_format, $amount_paid, $invoice_currency_code) ?></td>
                         </tr>
+                        <?php while ($payment_row = mysqli_fetch_assoc($sql_payments)) { ?>
+                            <?php if (!empty($payment_row['payment_receipt_url'])) { ?>
+                                <tr>
+                                    <td colspan="2" class="text-end">
+                                        <a href="<?= escapeHtml($payment_row['payment_receipt_url']) ?>" target="_blank" rel="noopener" class="small">
+                                            <i class="fas fa-receipt me-1"></i>View <?= escapeHtml($payment_row['payment_method']) ?> Receipt
+                                        </a>
+                                    </td>
+                                </tr>
+                            <?php } ?>
+                        <?php } ?>
                     <?php
                     }
                     ?>

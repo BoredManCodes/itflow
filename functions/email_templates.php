@@ -216,8 +216,8 @@ function emailTemplateDefaults() {
         'payment_received_online' => [
             'name' => 'Payment Received - Online/Autopay',
             'subject' => 'Payment Received - Invoice {invoice_prefix}{invoice_number}',
-            'body' => "Hello {contact_name},<br><br>We have received online payment for the amount of {amount} for invoice <a href='{invoice_url}'>{invoice_prefix}{invoice_number}</a>. Please keep this email as a receipt for your records.<br><br>Amount Paid: {amount}<br><br>Thank you for your business!<br><br><br>--<br>{company_name} - Billing Department<br>{from_email}<br>{company_phone}",
-            'tokens' => 'contact_name, amount, invoice_url, invoice_prefix, invoice_number, company_name, company_phone, from_email',
+            'body' => "Hello {contact_name},<br><br>We have received online payment for the amount of {amount} for invoice <a href='{invoice_url}'>{invoice_prefix}{invoice_number}</a>. Please keep this email as a receipt for your records.<br><br>Amount Paid: {amount}<br>{receipt_line}<br>Thank you for your business!<br><br><br>--<br>{company_name} - Billing Department<br>{from_email}<br>{company_phone}",
+            'tokens' => 'contact_name, amount, invoice_url, invoice_prefix, invoice_number, company_name, company_phone, from_email, receipt_line',
         ],
         'payment_received_internal' => [
             'name' => 'Payment Received - Internal Notification',

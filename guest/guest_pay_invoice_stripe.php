@@ -280,6 +280,7 @@ if (isset($_GET['invoice_id'], $_GET['url_key']) && !isset($_GET['payment_intent
             'company_name' => $company_name,
             'company_phone' => $company_phone,
             'from_email' => $config_invoice_from_email,
+            'receipt_line' => '',
         ]);
         $subject = $rendered['subject'];
         $body = $rendered['body'];
