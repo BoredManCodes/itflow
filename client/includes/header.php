@@ -67,8 +67,13 @@ header("X-Frame-Options: DENY"); // Legacy
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
         <a class="navbar-brand" href="index.php"><?= escapeHtml($session_company_name) ?></a>
+        <?php /* A FontAwesome glyph instead of Bootstrap's default data-URI icon - several
+         client portal pages send a strict `default-src 'self'` CSP with no img-src
+         exception for data:, which silently blocks that background-image and leaves
+         the button empty. The icon font is already loaded same-origin for every other
+         icon in this header, so it isn't affected. */ ?>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent">
-            <span class="navbar-toggler-icon"></span>
+            <i class="fas fa-bars text-white"></i>
         </button>
 
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
@@ -166,8 +171,14 @@ header("X-Frame-Options: DENY"); // Legacy
 <!-- Page content container -->
 <div class="container mt-4">
 
-    <div class="row mb-3">
-        <div class="col-md-1 text-center">
+    <?php /* Flex row rather than col-md-1/col-md-11 - those have no unprefixed
+     fallback, so below the md breakpoint (real phones) each one drops to full
+     width and stacks: avatar alone on its own row, then a second row with the
+     welcome text and a float-end logo that had nothing to float against. Flex
+     keeps the avatar and name on one line at every width, and wraps the logo
+     onto its own line only if space actually runs out. */ ?>
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <div class="flex-shrink-0">
             <?php if (!empty($session_contact_photo)) { ?>
                 <img src="/uploads/clients/<?= $session_client_id ?>/<?= $session_contact_photo ?>" alt="..." height="50" width="50" class="rounded-circle img-fluid">
 
@@ -179,12 +190,11 @@ header("X-Frame-Options: DENY"); // Legacy
             <?php } ?>
         </div>
 
-        <div class="col-md-11 p-0">
-                <?php if ($session_company_logo) { ?>
-                    <img height="48" width="142" class="img-fluid float-end" src="<?= "/uploads/settings/$session_company_logo" ?>">
-                <?php } ?>
-            <h4>Welcome, <strong><?= stripslashes(escapeHtml($session_contact_name)) ?></strong>!</h4>
-        </div>
+        <h4 class="mb-0 flex-grow-1">Welcome, <strong><?= stripslashes(escapeHtml($session_contact_name)) ?></strong>!</h4>
+
+        <?php if ($session_company_logo) { ?>
+            <img height="48" width="142" class="img-fluid flex-shrink-0" src="<?= "/uploads/settings/$session_company_logo" ?>">
+        <?php } ?>
     </div>
     <hr>
 
