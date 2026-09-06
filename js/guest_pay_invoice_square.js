@@ -14,7 +14,7 @@ async function initialize() {
   card = await payments.card();
   await card.attach("#card-container");
 
-  document.getElementById("submit").hidden = false;
+  document.getElementById("pay-submit").hidden = false;
 }
 
 async function handleSubmit(e) {
@@ -36,7 +36,10 @@ async function handleSubmit(e) {
 
   // Real form submit - the response is a fresh page load handled server-side by
   // guest_pay_invoice_square.php, same as a traditional non-AJAX checkout.
-  e.target.submit();
+  // Calling the prototype method directly (rather than e.target.submit()) survives
+  // a future form control being given id/name="submit", which otherwise shadows
+  // the form's native submit() with that element - exactly what broke this before.
+  HTMLFormElement.prototype.submit.call(e.target);
 }
 
 function showMessage(messageText) {
@@ -63,11 +66,11 @@ function logTokenizeFailure(message) {
 
 function setLoading(isLoading) {
   if (isLoading) {
-    document.querySelector("#submit").disabled = true;
+    document.querySelector("#pay-submit").disabled = true;
     document.querySelector("#spinner").classList.remove("hidden");
     document.querySelector("#button-text").classList.add("hidden");
   } else {
-    document.querySelector("#submit").disabled = false;
+    document.querySelector("#pay-submit").disabled = false;
     document.querySelector("#spinner").classList.add("hidden");
     document.querySelector("#button-text").classList.remove("hidden");
   }

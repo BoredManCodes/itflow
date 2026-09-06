@@ -315,7 +315,7 @@ if (isset($_POST['invoice_id'], $_POST['url_key'], $_POST['source_id'])) {
                         <input type="hidden" id="source_id" name="source_id" value="">
                         <div id="card-container"></div>
                         <br>
-                        <button type="submit" id="submit" class="btn btn-primary btn-lg w-100 text-bold" hidden="hidden">
+                        <button type="submit" id="pay-submit" class="btn btn-primary btn-lg w-100 text-bold" hidden="hidden">
                             <div class="spinner hidden" id="spinner"></div>
                             <span id="button-text"><i class="fas fa-check me-2"></i>Pay Invoice</span>
                         </button>
