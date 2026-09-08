@@ -54,6 +54,47 @@ if (!empty($subject)) {
         applyTicketAutoAssign($insert_id);
         applyTicketRules($insert_id);
 
+        $client_uri = $client_id ? "&client_id=$client_id" : '';
+
+        // Notify agent DL of the new ticket, if populated with a valid email
+        $config_ticket_new_ticket_notification_email = filter_var($config_ticket_new_ticket_notification_email, FILTER_VALIDATE_EMAIL);
+        if ($config_ticket_new_ticket_notification_email) {
+            if ($client_id) {
+                $client_name_sql = mysqli_query($mysqli, "SELECT client_name FROM clients WHERE client_id = $client_id LIMIT 1");
+                $client_name_row = mysqli_fetch_assoc($client_name_sql);
+                $client_name = escapeSql($client_name_row['client_name'] ?? '');
+            } else {
+                $client_name = "API";
+            }
+
+            $rendered = renderEmailTemplate('new_ticket_notification_internal', [
+                'app_name' => $config_app_name,
+                'client_name' => $client_name,
+                'ticket_subject' => $subject,
+                'priority' => $priority,
+                'ticket_url' => "https://$config_base_url/agent/ticket.php?ticket_id=$insert_id$client_uri",
+                'ticket_details' => $details,
+            ]);
+
+            $data = [
+                [
+                    'from' => $config_ticket_from_email,
+                    'from_name' => $config_ticket_from_name,
+                    'recipient' => $config_ticket_new_ticket_notification_email,
+                    'recipient_name' => $config_ticket_from_name,
+                    'subject' => $rendered['subject'],
+                    'body' => $rendered['body'],
+                ]
+            ];
+            addToMailQueue($data);
+        }
+
+        // Notify techs of the new (unassigned) ticket
+        appNotify("Ticket", "New ticket via API ($api_key_name): $subject", "/agent/ticket.php?ticket_id=$insert_id$client_uri", $client_id, $insert_id);
+
+        // Custom action/notif handler
+        triggerCustomAction('ticket_create', $insert_id);
+
         // Logging
         logAudit("Ticket", "Create", "Created ticket $config_ticket_prefix$ticket_number $subject via API ($api_key_name)", $client_id, $insert_id);
         logAudit("API", "Success", "Created ticket $config_ticket_prefix$ticket_number $subject via API ($api_key_name)", $client_id);
