@@ -2727,7 +2727,7 @@ if (isset($_GET['close_ticket'])) {
         enforceClientAccess();
     }
 
-    mysqli_query($mysqli, "UPDATE tickets SET ticket_status = 5, ticket_closed_at = NOW(), ticket_closed_by = $session_user_id WHERE ticket_id = $ticket_id") or die(mysqli_error($mysqli));
+    mysqli_query($mysqli, "UPDATE tickets SET ticket_status = 5, ticket_resolved_at = COALESCE(ticket_resolved_at, NOW()), ticket_closed_at = NOW(), ticket_closed_by = $session_user_id WHERE ticket_id = $ticket_id") or die(mysqli_error($mysqli));
     syncTicketSlaClock($ticket_id);
     setTicketResolutionSlaMet($ticket_id);
 
