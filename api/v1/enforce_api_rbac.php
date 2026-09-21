@@ -143,6 +143,7 @@ $resource_module = [
     'vendors'       => 'module_client',
     'invoices'      => 'module_sales',
     'invoice_items' => 'module_sales',
+    'payments'      => 'module_sales',   // payments/create.php also requires module_financial
     'quotes'        => 'module_sales',
     'products'      => 'module_sales',
     'expenses'      => 'module_financial',
