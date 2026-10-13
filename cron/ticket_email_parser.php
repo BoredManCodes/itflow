@@ -557,6 +557,11 @@ use DirectoryTree\ImapEngine\Mailbox;
 
 $validate_cert = true;
 
+// Local IMAP bridges (e.g. Proton Mail Bridge) serve a self-signed cert on loopback only
+if (in_array(strtolower((string)$config_imap_host), ['127.0.0.1', 'localhost', '::1'], true)) {
+    $validate_cert = false;
+}
+
 // Defaults from settings (standard IMAP)
 $host = $config_imap_host;
 $port = (int)$config_imap_port;
