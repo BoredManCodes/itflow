@@ -136,8 +136,9 @@ class ImapConnection implements ConnectionInterface
             'starttls', 'tcp' => 'tcp',
         };
 
-        if (in_array($transport, ['ssl', 'tls'])) {
-            $options[$key] = [
+        if (in_array($transport, ['ssl', 'tls', 'starttls'])) {
+            // STARTTLS upgrades a tcp stream, so the verify options still belong in the ssl context
+            $options['ssl'] = [
                 'verify_peer' => $validateCert,
                 'verify_peer_name' => $validateCert,
             ];
