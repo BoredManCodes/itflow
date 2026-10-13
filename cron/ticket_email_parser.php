@@ -646,6 +646,7 @@ try {
     $candidates = [
         $targetFolderName,                              // Root-level (empty namespace prefix)
         'INBOX' . $delimiter . $targetFolderName,       // INBOX-prefixed namespace (e.g. cPanel Dovecot)
+        'Folders' . $delimiter . $targetFolderName,     // Proton Mail Bridge only allows new folders under Folders/
     ];
 
     // Re-use the folder if it already exists at either location
