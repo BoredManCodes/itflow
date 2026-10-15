@@ -1375,6 +1375,8 @@ if (isset($_POST['save_push_subscription'])) {
         push_subscription_auth = '$auth',
         push_subscription_user_agent = '$user_agent'");
 
+    prunePushSubscriptions($session_user_id, $_SERVER['HTTP_USER_AGENT'] ?? '');
+
     echo json_encode(['status' => 'success']);
     exit;
 }

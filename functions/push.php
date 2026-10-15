@@ -41,11 +41,72 @@ function ensureVapidKeys() {
 }
 
 /*
- * Push a real OS notification to every device the given user has subscribed
- * on. Silently does nothing if the user has no subscriptions, or if $user_id
- * is empty/zero.
+ * Keep only the newest few subscriptions per user and browser. Firefox on
+ * Android hands out a fresh endpoint on every re-subscribe and the old ones
+ * keep accepting pushes, so without this the table grows without bound and
+ * every notification pays one HTTP round trip per dead endpoint. A few are
+ * kept so two devices sharing a user agent string don't evict each other.
+ */
+function prunePushSubscriptions($user_id, $user_agent) {
+    global $mysqli;
+
+    $user_id = intval($user_id);
+    $user_agent = escapeSql($user_agent);
+
+    $sql = mysqli_query($mysqli, "SELECT push_subscription_id FROM push_subscriptions
+        WHERE push_subscription_user_id = $user_id AND push_subscription_user_agent <=> '$user_agent'
+        ORDER BY push_subscription_id DESC LIMIT 3, 1000");
+
+    while ($sql && $row = mysqli_fetch_assoc($sql)) {
+        mysqli_query($mysqli, "DELETE FROM push_subscriptions WHERE push_subscription_id = " . intval($row['push_subscription_id']));
+    }
+}
+
+/*
+ * Queue a push to every device the given user has subscribed on without
+ * making the caller wait. Delivery is one HTTP request per subscription, so
+ * it runs in a detached CLI process (cron/push_send.php); if that process
+ * can't be started (exec disabled, no CLI binary) it falls back to sending
+ * inline. Silently does nothing if the user has no subscriptions.
  */
 function sendPushNotification($user_id, $type, $message, $action = null) {
+    global $mysqli;
+
+    $user_id = intval($user_id);
+    if (!$user_id) {
+        return;
+    }
+
+    $sql = mysqli_query($mysqli, "SELECT 1 FROM push_subscriptions WHERE push_subscription_user_id = $user_id LIMIT 1");
+    if (!$sql || !mysqli_num_rows($sql)) {
+        return;
+    }
+
+    $php = PHP_BINDIR . '/php';
+    $worker = realpath(__DIR__ . '/../cron/push_send.php');
+    $can_spawn = php_sapi_name() !== 'cli'
+        && function_exists('exec')
+        && !in_array('exec', array_map('trim', explode(',', (string) ini_get('disable_functions'))), true)
+        && is_executable($php)
+        && $worker;
+
+    if ($can_spawn) {
+        $payload = base64_encode(json_encode([$type, $message, $action]));
+        exec(escapeshellarg($php) . ' ' . escapeshellarg($worker) . ' ' . $user_id . ' ' . escapeshellarg($payload) . ' > /dev/null 2>&1 &', $out, $code);
+        if ($code === 0) {
+            return;
+        }
+    }
+
+    sendPushNotificationNow($user_id, $type, $message, $action);
+}
+
+/*
+ * Push a real OS notification to every device the given user has subscribed
+ * on, waiting for each push service to answer. Silently does nothing if the
+ * user has no subscriptions, or if $user_id is empty/zero.
+ */
+function sendPushNotificationNow($user_id, $type, $message, $action = null) {
     global $mysqli, $config_vapid_public_key, $config_vapid_private_key, $config_vapid_subject, $config_base_url;
 
     $user_id = intval($user_id);
