@@ -512,6 +512,7 @@ If you are coming from 26.08 or earlier, the database update still has to be run
     - Bulk Reimburse pays back the ticked expenses of one agent. Bulk Set Account puts a paid personally expense on an account instead, unless it was paid back already.
     - Expenses to reimburse show on the dashboard. The export has a Paid Personally column, and the list can be cut to one agent's.
 - **Tickets**
+  - A reply that was emailed to the client and watchers now shows an Emailed badge beside Public, so a public reply and a public and email reply can be told apart. Replies from before the update (database 3.4.8) are not marked, as what was emailed then was not recorded
   - The ticket list has views for Open, Mine, Unassigned, Needs reply, Waiting, Overdue, Scheduled, Closed and All.
     - Each row shows whose move it is (yours or the client's) along with SLA and due badges, and status, priority and agent change right in the row.
     - The SLA column can be sorted, the filters fold away, and the list has a proper phone layout.

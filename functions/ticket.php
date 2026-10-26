@@ -699,15 +699,22 @@ function ticketMailCreated($ticket_id, $subject_prefix, $attachments = [], $to_w
 /*
  * A public reply on a ticket, to its contact and watchers - $reply_html as
  * saved (with the signature), $by who wrote it (raw). $resolved when the
- * reply resolved it.
+ * reply resolved it. Give $reply_id to stamp ticket_reply_emailed_at on the
+ * reply once the email is queued, so a public reply and one that was emailed
+ * can be told apart.
  */
-function ticketMailReply($ticket_id, $reply_html, $by, $resolved = false, $attachments = []) {
+function ticketMailReply($ticket_id, $reply_html, $by, $resolved = false, $attachments = [], $reply_id = 0) {
+    global $mysqli;
     $row = ticketRow($ticket_id);
     if (!$row) {
         return 0;
     }
-    return ticketMailSend($row['ticket_id'], ($resolved ? 'Ticket resolved' : 'Ticket update') . " - [" . ticketReference($row) . "] - " . $row['ticket_subject'] . ($resolved ? ' | (pending closure)' : ''),
+    $sent = ticketMailSend($row['ticket_id'], ($resolved ? 'Ticket resolved' : 'Ticket update') . " - [" . ticketReference($row) . "] - " . $row['ticket_subject'] . ($resolved ? ' | (pending closure)' : ''),
         ticketEmailContent($row, $resolved ? 'resolved' : 'reply', ['message' => (string) $reply_html, 'by' => (string) $by]), ['attachments' => $attachments]);
+    if ($sent && intval($reply_id)) {
+        mysqli_query($mysqli, "UPDATE ticket_replies SET ticket_reply_emailed_at = NOW() WHERE ticket_reply_id = " . intval($reply_id));
+    }
+    return $sent;
 }
 
 /** Tell people just made watchers of a ticket - $emails, by $by (raw). How many it went to. */

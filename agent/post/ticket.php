@@ -903,7 +903,7 @@ if (isset($_POST['bulk_ticket_reply'])) {
 
         // Email the client and watchers about a public update
         if (!$private_note) {
-            ticketMailReply($ticket_id, $reply_text, stripslashes($session_name), false, $bulk_attachments['send']);
+            ticketMailReply($ticket_id, $reply_text, stripslashes($session_name), false, $bulk_attachments['send'], $bulk_reply_id);
         }
 
         // Tell the agent it is assigned to, and whoever opened it
@@ -1116,7 +1116,7 @@ if (isset($_POST['add_ticket_reply'])) {
         if ($send_email) {
             // The reply as saved - with the signature - read back
             ticketMailReply($ticket_id, (string) getFieldById('ticket_replies', $ticket_reply_id, 'ticket_reply'), stripslashes($session_name),
-                $ticket_status === TICKET_STATUS_RESOLVED, $emailable_attachments['send']);
+                $ticket_status === TICKET_STATUS_RESOLVED, $emailable_attachments['send'], $ticket_reply_id);
         }
 
         // Tell the agent it is assigned to, and whoever opened it
