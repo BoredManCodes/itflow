@@ -265,7 +265,7 @@ if (isset($_GET['ticket_id'])) {
 
         // Get ticket replies
         $sql_ticket_replies = mysqli_query($mysqli, "SELECT contact_name, contact_photo, ticket_reply, ticket_reply_created_at, ticket_reply_id,
-            ticket_reply_time_worked, ticket_reply_type, ticket_reply_updated_at, user_avatar, user_id,
+            ticket_reply_time_worked, ticket_reply_type, ticket_reply_updated_at, ticket_reply_emailed_at, user_avatar, user_id,
             user_name FROM ticket_replies
             LEFT JOIN users ON ticket_reply_by = user_id
             LEFT JOIN contacts ON ticket_reply_by = contact_id
@@ -911,6 +911,10 @@ if (isset($_GET['ticket_id'])) {
                     } else {
                         $reply_border = 'info';
                         $reply_badge = "<span class='badge bg-info text-dark'><i class='fas fa-fw fa-comment me-1'></i>Public reply</span>";
+                        // A reply emailed to the client and watchers says so, and when
+                        if (!empty($reply_row['ticket_reply_emailed_at'])) {
+                            $reply_badge .= " <span class='badge bg-info text-dark' title='Emailed to the client and watchers " . escapeHtml($reply_row['ticket_reply_emailed_at']) . "'><i class='fas fa-fw fa-envelope me-1'></i>Emailed</span>";
+                        }
                         $reply_group = 'public';
                     }
 

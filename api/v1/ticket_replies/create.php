@@ -195,6 +195,7 @@ if (!empty($ticket_id) && !empty($reply)) {
 
                 if (!empty($data)) {
                     addToMailQueue($data);
+                    mysqli_query($mysqli, "UPDATE ticket_replies SET ticket_reply_emailed_at = NOW() WHERE ticket_reply_id = " . intval($insert_id));
                 }
 
             }

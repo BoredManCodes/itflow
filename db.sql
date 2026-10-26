@@ -2950,6 +2950,7 @@ CREATE TABLE `ticket_replies` (
   `ticket_reply_time_worked` time DEFAULT NULL,
   `ticket_reply_created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `ticket_reply_updated_at` datetime DEFAULT NULL ON UPDATE current_timestamp(),
+  `ticket_reply_emailed_at` datetime DEFAULT NULL,
   `ticket_reply_archived_at` datetime DEFAULT NULL,
   `ticket_reply_by` int(11) NOT NULL,
   `ticket_reply_ticket_id` int(11) NOT NULL,

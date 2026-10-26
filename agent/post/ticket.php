@@ -2258,6 +2258,8 @@ if (isset($_POST['add_ticket_reply'])) {
                 ];
             }
             addToMailQueue($data);
+            // Mark the reply as emailed, so it can be told apart from a public reply that was not
+            mysqli_query($mysqli, "UPDATE ticket_replies SET ticket_reply_emailed_at = NOW() WHERE ticket_reply_id = $ticket_reply_id");
 
         }
         //End Mail IF
